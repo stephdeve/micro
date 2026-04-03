@@ -234,16 +234,26 @@
         <form id="composeForm" method="POST" action="{{ route('messagerie.store') }}" enctype="multipart/form-data">
             @csrf
 
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: #8ba9d0;">Destinataire *</label>
-                <select name="receiver_id" id="receiver_id" class="input-field" required style="width: 100%;">
-                    <option value="">Sélectionner un destinataire</option>
-                    @foreach($users as $user)
-                        @if($user->id != Auth::id())
-                            <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
-                        @endif
-                    @endforeach
-                </select>
+            <div style="margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 200px; gap: 0.8rem; align-items: flex-end;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8ba9d0;">Rechercher un employé</label>
+                    <input type="text" id="receiverSearch" class="input-field" placeholder="Recherche par nom ou email" oninput="filterRecipient()">
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="checkbox" class="checkbox-toggle" name="send_to_all" id="send_to_all" value="1" onchange="toggleSendToAll()">
+                    <label for="send_to_all" class="checkbox-label">Tous les employés</label>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #8ba9d0;">Destinataire *</label>
+                    <select name="receiver_id" id="receiver_id" class="input-field" required style="width: 100%;">
+                        <option value="">Sélectionner un destinataire</option>
+                        @foreach($users as $user)
+                            @if($user->id != Auth::id())
+                                <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                            @endif
+                        @endforeach
+                    </select>
+                </div>
             </div>
 
             <div style="margin-bottom: 1.5rem;">
@@ -333,6 +343,26 @@
         opacity: 1;
     }
 }
+
+.checkbox-toggle {
+    width: 1.15rem;
+    height: 1.15rem;
+    accent-color: #15b3ff;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(52, 84, 123, 0.8);
+    background-color: #0f2a4d;
+}
+
+.checkbox-label {
+    color: #a4c5e6;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.checkbox-label:hover {
+    color: #d8f4ff;
+}
 </style>
 
 <script>
@@ -356,6 +386,36 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔒 Fermeture du modal');
         if (modal) {
             modal.style.display = 'none';
+        }
+    };
+
+    window.toggleSendToAll = function() {
+        const sendAll = document.getElementById('send_to_all').checked;
+        const receiver = document.getElementById('receiver_id');
+        const search = document.getElementById('receiverSearch');
+        receiver.disabled = sendAll;
+        receiver.required = !sendAll;
+        search.disabled = sendAll;
+
+        if (sendAll) {
+            receiver.value = '';
+        }
+    };
+
+    window.filterRecipient = function() {
+        const query = document.getElementById('receiverSearch').value.toLowerCase();
+        const options = document.getElementById('receiver_id').options;
+
+        for (let i = 0; i < options.length; i++) {
+            const option = options[i];
+            if (option.value === '') { continue; }
+            const text = option.text.toLowerCase();
+            option.style.display = text.includes(query) ? 'block' : 'none';
+        }
+
+        const receiver = document.getElementById('receiver_id');
+        if (receiver.options[receiver.selectedIndex] && receiver.options[receiver.selectedIndex].style.display === 'none') {
+            receiver.selectedIndex = 0;
         }
     };
 

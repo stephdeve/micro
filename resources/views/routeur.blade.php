@@ -36,21 +36,21 @@
     <div class="filters-section" style="margin-bottom: 2rem;">
         <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 300px;">
-                <input type="text" class="input-field" placeholder="Rechercher un routeur (IP, nom, modèle...)" style="width: 100%;">
+                <input id="searchInput" type="text" class="input-field" placeholder="Rechercher un routeur (IP, nom, modèle...)" style="width: 100%;">
             </div>
-            <select class="input-field" style="width: auto; min-width: 150px;">
-                <option>Tous les statuts</option>
-                <option>En ligne</option>
-                <option>Hors ligne</option>
-                <option>En maintenance</option>
+            <select id="statutFilter" class="input-field" style="width: auto; min-width: 150px;">
+                <option value="">Tous les statuts</option>
+                <option value="en_ligne">En ligne</option>
+                <option value="hors_ligne">Hors ligne</option>
+                <option value="maintenance">En maintenance</option>
             </select>
-            <select class="input-field" style="width: auto; min-width: 150px;">
-                <option>Tous les modèles</option>
-                <option>RB951G</option>
-                <option>RB750</option>
-                <option>CRS326</option>
-                <option>cAP ac</option>
+            <select id="modeleFilter" class="input-field" style="width: auto; min-width: 150px;">
+                <option value="">Tous les modèles</option>
+                @foreach($modeles as $modele)
+                    <option value="{{ $modele }}">{{ $modele }}</option>
+                @endforeach
             </select>
+            <button id="refreshRouteurs" class="btn-add" style="height: 38px;">↻ Actualiser</button>
         </div>
     </div>
 
@@ -77,61 +77,13 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td><i class="fas fa-check-circle" style="color: #2ef75b;"></i> Routeur Principal</td>
-                        <td>RB951G-2HnD</td>
-                        <td>192.168.1.1</td>
-                        <td>7.12</td>
-                        <td><span class="status-active">En ligne</span></td>
-                        <td>45 jours</td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="action-btn view" title="Détails"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn edit" title="Configurer"><i class="fas fa-cog"></i></button>
-                                <button class="action-btn" style="background:#1f3145;" title="Console"><i class="fas fa-terminal"></i></button>
-                                <button class="action-btn" style="background:#1f3145;" title="Redémarrer"><i class="fas fa-sync-alt"></i></button>
-                                <button class="action-btn delete" title="Supprimer"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-check-circle" style="color: #2ef75b;"></i> Routeur Backup</td>
-                        <td>RB750Gr3</td>
-                        <td>192.168.1.254</td>
-                        <td>7.10</td>
-                        <td><span class="status-active">En ligne</span></td>
-                        <td>12 jours</td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="action-btn view" title="Détails"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn edit" title="Configurer"><i class="fas fa-cog"></i></button>
-                                <button class="action-btn" style="background:#1f3145;" title="Console"><i class="fas fa-terminal"></i></button>
-                                <button class="action-btn" style="background:#1f3145;" title="Redémarrer"><i class="fas fa-sync-alt"></i></button>
-                                <button class="action-btn delete" title="Supprimer"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-exclamation-circle" style="color: #ffaa33;"></i> Routeur DMZ</td>
-                        <td>RB4011iGS+</td>
-                        <td>192.168.2.1</td>
-                        <td>7.11</td>
-                        <td><span class="status-inactive">Hors ligne</span></td>
-                        <td>0 jour</td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="action-btn view" title="Détails"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn edit" title="Configurer"><i class="fas fa-cog"></i></button>
-                                <button class="action-btn" style="background:#1f3145;" title="Console"><i class="fas fa-terminal"></i></button>
-                                <button class="action-btn" style="background:#ffaa33;" title="Dépanner"><i class="fas fa-tools"></i></button>
-                                <button class="action-btn delete" title="Supprimer"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
+                <tbody id="routeursTableBody">
+                    <!-- Chargement dynamique via JavaScript -->
                 </tbody>
             </table>
         </div>
+
+        <div id="routeursPagination" class="pagination" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;"></div>
     </div>
 
     <!-- Carte réseau -->
@@ -175,7 +127,150 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const modal = document.getElementById('routeurModal');
     const form = document.getElementById('routeurForm');
-    
+    const tableBody = document.getElementById('routeursTableBody');
+    const paginationContainer = document.getElementById('routeursPagination');
+    const searchInput = document.getElementById('searchInput');
+    const statutFilter = document.getElementById('statutFilter');
+    const modeleFilter = document.getElementById('modeleFilter');
+    const refreshRouteurs = document.getElementById('refreshRouteurs');
+
+    function formatStatusLabel(statut) {
+        if (statut === 'en_ligne') return '<span class="status-active">En ligne</span>';
+        if (statut === 'hors_ligne') return '<span class="status-inactive">Hors ligne</span>';
+        if (statut === 'maintenance') return '<span class="status-warning">Maintenance</span>';
+        return '<span>' + statut + '</span>';
+    }
+
+    function renderRouteurs(routeurs) {
+        tableBody.innerHTML = '';
+
+        if (!routeurs || routeurs.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Aucun routeur trouvé.</td></tr>';
+            return;
+        }
+
+        routeurs.forEach(routeur => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${routeur.nom || '—'}</td>
+                <td>${routeur.modele || '—'}</td>
+                <td>${routeur.adresse_ip || '—'}</td>
+                <td>${routeur.version_ros || '—'}</td>
+                <td>${formatStatusLabel(routeur.statut)}</td>
+                <td>${routeur.uptime ? routeur.uptime + ' j' : 'N/A'}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn view" title="Détails" onclick="viewRouteur(${routeur.id})"><i class="fas fa-eye"></i></button>
+                        <button class="action-btn edit" title="Configurer" onclick="openModal('edit', ${routeur.id})"><i class="fas fa-cog"></i></button>
+                        <button class="action-btn delete" title="Supprimer" onclick="deleteRouteur(${routeur.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    function renderPagination(pagination) {
+        paginationContainer.innerHTML = '';
+
+        if (!pagination || pagination.last_page <= 1) {
+            return;
+        }
+
+        const summary = document.createElement('div');
+        summary.style.marginBottom = '0.5rem';
+        summary.style.color = '#b0c6e9';
+        summary.style.fontSize = '0.88rem';
+        summary.textContent = `Page ${pagination.current_page} / ${pagination.last_page} (${pagination.total} routeur${pagination.total > 1 ? 's' : ''})`;
+        paginationContainer.appendChild(summary);
+
+        const createBullet = (label, page, active = false, disabled = false) => {
+            const bullet = document.createElement('button');
+            bullet.textContent = label;
+            bullet.style.cursor = disabled ? 'not-allowed' : 'pointer';
+            bullet.disabled = disabled;
+            bullet.style.width = '32px';
+            bullet.style.height = '32px';
+            bullet.style.borderRadius = '16px';
+            bullet.style.border = '1px solid #2d405a';
+            bullet.style.background = active ? '#1b2f42' : '#112033';
+            bullet.style.color = active ? '#ffffff' : '#8ba1bd';
+            bullet.style.margin = '0 0.2rem';
+            bullet.style.fontSize = '0.9rem';
+            if (active) {
+                bullet.style.fontWeight = '700';
+                bullet.style.boxShadow = '0 0 8px rgba(60, 120, 195, 0.3)';
+            }
+            bullet.addEventListener('click', () => {
+                if (!disabled) loadRouteurs(page);
+            });
+            return bullet;
+        };
+
+        const range = 2;
+        let start = Math.max(1, pagination.current_page - range);
+        let end = Math.min(pagination.last_page, pagination.current_page + range);
+
+        if (start > 1) {
+            paginationContainer.appendChild(createBullet('1', 1));
+            if (start > 2) {
+                const dots = document.createElement('span');
+                dots.textContent = '...';
+                dots.style.color = '#a6b8cf';
+                dots.style.padding = '0 0.5rem';
+                paginationContainer.appendChild(dots);
+            }
+        }
+
+        for (let i = start; i <= end; i++) {
+            paginationContainer.appendChild(createBullet(String(i), i, pagination.current_page === i));
+        }
+
+        if (end < pagination.last_page) {
+            if (end < pagination.last_page - 1) {
+                const dots = document.createElement('span');
+                dots.textContent = '...';
+                dots.style.color = '#a6b8cf';
+                dots.style.padding = '0 0.5rem';
+                paginationContainer.appendChild(dots);
+            }
+            paginationContainer.appendChild(createBullet(String(pagination.last_page), pagination.last_page));
+        }
+    }
+
+    function loadRouteurs(page = 1) {
+        const params = new URLSearchParams();
+        if (searchInput.value.trim()) params.set('search', searchInput.value.trim());
+        if (statutFilter.value) params.set('statut', statutFilter.value);
+        if (modeleFilter.value) params.set('modele', modeleFilter.value);
+        params.set('page', page);
+
+        fetch(`/routeurs/data?${params.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            renderRouteurs(data.routeurs);
+            renderPagination(data.pagination);
+            console.log('Routeurs chargés', data);
+        })
+        .catch(error => {
+            console.error('Erreur chargement routeurs:', error);
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#f55">Erreur de chargement</td></tr>';
+        });
+    }
+
+    searchInput.addEventListener('input', () => loadRouteurs(1));
+    statutFilter.addEventListener('change', () => loadRouteurs(1));
+    modeleFilter.addEventListener('change', () => loadRouteurs(1));
+    refreshRouteurs.addEventListener('click', () => loadRouteurs(1));
+
+    loadRouteurs();
+
     // Intercepter la soumission du formulaire
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -305,16 +400,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = `/routeurs/${id}`;
-            form.innerHTML = '@csrf @method('DELETE')';
+            form.innerHTML = '{!! csrf_field() !!}<input type="hidden" name="_method" value="DELETE">';
             document.body.appendChild(form);
             form.submit();
         }
     };
 
-    window.syncRouteur = function(id) {
-        if (confirm('Lancer la synchronisation de ce routeur ?')) {
-            window.location.href = `/routeurs/${id}/sync`;
-        }
+    window.viewRouteur = function(id) {
+        window.location.href = `/routeurs/${id}`;
     };
 
     // Fermer le modal si on clique en dehors

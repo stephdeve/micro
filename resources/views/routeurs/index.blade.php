@@ -18,17 +18,17 @@
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-title"><i class="fas fa-check-circle" style="color: #2ef75b;"></i> Routeurs en ligne</div>
-            <div class="stat-value">{{ $stats['en_ligne'] }}</div>
+            <div class="stat-value" data-value="{{ $stats['en_ligne'] }}">{{ number_format($stats['en_ligne'], 0, ',', ' ') }}</div>
             <div class="stat-change"><i class="fas fa-arrow-up"></i> Actifs</div>
         </div>
         <div class="stat-card">
             <div class="stat-title"><i class="fas fa-exclamation-triangle" style="color: #ffaa33;"></i> Routeurs hors ligne</div>
-            <div class="stat-value">{{ $stats['hors_ligne'] }}</div>
+            <div class="stat-value" data-value="{{ $stats['hors_ligne'] }}">{{ number_format($stats['hors_ligne'], 0, ',', ' ') }}</div>
             <div class="stat-change"><i class="fas fa-exclamation-circle"></i> Attention requise</div>
         </div>
         <div class="stat-card">
             <div class="stat-title"><i class="fas fa-microchip"></i> En maintenance</div>
-            <div class="stat-value">{{ $stats['maintenance'] }}</div>
+            <div class="stat-value" data-value="{{ $stats['maintenance'] }}">{{ number_format($stats['maintenance'], 0, ',', ' ') }}</div>
             <div class="stat-change">{{ $stats['modeles'] }} modèles différents</div>
         </div>
         <div class="stat-card">
@@ -39,9 +39,9 @@
     </div>
 
     <!-- Filtres et recherche -->
-    <div class="filters-section" style="margin-bottom: 2rem;">
+    <div class="filters-section">
         <form method="GET" action="{{ route('routeurs.index') }}" id="filter-form">
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div class="filters-controls">
                 <div style="flex: 1; min-width: 300px;">
                     <input type="text" name="search" class="input-field" placeholder="Rechercher un routeur (IP, nom, modèle...)" value="{{ request('search') }}" style="width: 100%;">
                 </div>
@@ -58,7 +58,7 @@
                     @endforeach
                 </select>
                 @if(request()->anyFilled(['search', 'statut', 'modele']))
-                    <a href="{{ route('routeurs.index') }}" class="btn-icon" style="width: auto; padding: 0 1.5rem; border-radius: 2rem;">
+                    <a href="{{ route('routeurs.index') }}" class="btn-secondary" style="width: auto; padding: 0 1.5rem;">
                         <i class="fas fa-times"></i> Réinitialiser
                     </a>
                 @endif
@@ -103,7 +103,7 @@
                         <td>{{ $routeur->modele ?? 'N/A' }}</td>
                         <td>{{ $routeur->adresse_ip }}</td>
                         <td>{{ $routeur->version_ros ?? 'N/A' }}</td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <span class="status-{{ $routeur->statut == 'en_ligne' ? 'active' : ($routeur->statut == 'maintenance' ? 'inactive' : 'inactive') }}">
                                 {{ $routeur->statut == 'en_ligne' ? 'En ligne' : ($routeur->statut == 'maintenance' ? 'Maintenance' : 'Hors ligne') }}
                             </span>
@@ -123,12 +123,12 @@
                                 <button class="action-btn edit" onclick="editRouteur({{ $routeur->id }})" title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="action-btn" style="background:#1f3145;" onclick="syncRouteur({{ $routeur->id }})" title="Synchroniser">
+                                <!-- <button class="action-btn" style="background:#1f3145;" onclick="syncRouteur({{ $routeur->id }})" title="Synchroniser">
                                     <i class="fas fa-sync-alt"></i>
                                 </button>
                                 <button class="action-btn" style="background:#1f3145;" title="Console">
                                     <i class="fas fa-terminal"></i>
-                                </button>
+                                </button> -->
                                 <button class="action-btn delete" onclick="deleteRouteur({{ $routeur->id }})" title="Supprimer">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -137,8 +137,8 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 3rem;">
-                            <i class="fas fa-router" style="font-size: 3rem; color: #2a5f8a; margin-bottom: 1rem;"></i>
+                        <td colspan="7" class="no-data">
+                            <i class="fas fa-router"></i>
                             <p>Aucun routeur trouvé</p>
                             <button class="btn-primary" onclick="openModal('add')" style="margin-top: 1rem;">
                                 <i class="fas fa-plus"></i> Ajouter un routeur
@@ -152,42 +152,266 @@
 
         <!-- Pagination -->
         @if($routeurs->hasPages())
-        <div style="margin-top: 2rem;">
-            {{ $routeurs->links() }}
+        <style>
+            .pagination-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border: 1px solid #3a5578;
+                background: #0f1f35;
+                color: #8fa5bd;
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+                text-decoration: none;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                padding: 0;
+            }
+            .pagination-btn:hover {
+                background: #1a2d45;
+                border-color: #5a7fa0;
+                color: #b9d1e8;
+            }
+            .pagination-btn.active {
+                background: #1e3a5d;
+                border-color: #4a8fd4;
+                color: #fff;
+                font-weight: 700;
+                box-shadow: 0 0 10px rgba(74, 143, 212, 0.25);
+            }
+        </style>
+
+        <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="color: #b9cee5; font-size: 0.88rem;">
+                Page <strong>{{ $routeurs->currentPage() }}</strong> / {{ $routeurs->lastPage() }}  •  <strong>{{ $routeurs->total() }}</strong> routeur{{ $routeurs->total() > 1 ? 's' : '' }}
+            </div>
+            <div id="routeursPaginationContainer" style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+                @php
+                    $from = max(1, $routeurs->currentPage() - 2);
+                    $to = min($routeurs->lastPage(), $routeurs->currentPage() + 2);
+                @endphp
+
+                @if($from > 1)
+                    <button class="pagination-btn" onclick="loadPage(1)">1</button>
+                @endif
+
+                @if($from > 2)
+                    <span style="color: #6b7f96; padding: 0 0.3rem;">…</span>
+                @endif
+
+                @for($page = $from; $page <= $to; $page++)
+                    @if($page === $routeurs->currentPage())
+                        <span class="pagination-btn active">{{ $page }}</span>
+                    @else
+                        <button class="pagination-btn" onclick="loadPage({{ $page }})">{{ $page }}</button>
+                    @endif
+                @endfor
+
+                @if($to < $routeurs->lastPage() - 1)
+                    <span style="color: #6b7f96; padding: 0 0.3rem;">…</span>
+                @endif
+
+                @if($to < $routeurs->lastPage())
+                    <button class="pagination-btn" onclick="loadPage({{ $routeurs->lastPage() }})">{{ $routeurs->lastPage() }}</button>
+                @endif
+            </div>
         </div>
+
+        <script>
+            function loadPage(page) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('page', page);
+                
+                fetch(`{{ route('routeurs.index') }}?${params.toString()}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Remplacer le tbody
+                    const oldTbody = document.querySelector('tbody');
+                    const newTbody = doc.querySelector('tbody');
+                    if (oldTbody && newTbody) {
+                        oldTbody.replaceWith(newTbody);
+                    }
+                    
+                    // Remplacer la pagination
+                    const oldPagination = document.getElementById('routeursPaginationContainer');
+                    const newPagination = doc.getElementById('routeursPaginationContainer');
+                    if (oldPagination && newPagination) {
+                        oldPagination.replaceWith(newPagination);
+                    }
+                    
+                    // Scroll vers le tableau
+                    document.querySelector('.table-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    // Mettre à jour l'URL
+                    window.history.pushState(null, '', `{{ route('routeurs.index') }}?${params.toString()}`);
+                })
+                .catch(error => console.error('Erreur chargement:', error));
+            }
+        </script>
         @endif
     </div>
 
     <!-- Carte réseau -->
-    <div class="router-section" style="margin-top: 2rem;">
+    <div class="router-section">
         <div class="card">
             <div class="card-header">
                 <h3><i class="fas fa-project-diagram"></i> Topologie réseau</h3>
                 <span class="status-badge">Vue simplifiée</span>
             </div>
-            <div style="height: 300px; background: #0f1a24; border-radius: 1rem; display: flex; align-items: center; justify-content: center; border: 1px solid #2a3f5a;">
-                <i class="fas fa-map-marked-alt" style="font-size: 4rem; color: #2a5f8a;"></i>
-                <span style="margin-left: 1rem; color: #8ba9d0;">Carte interactive (intégration future)</span>
-            </div>
-        </div>
-        <div class="card">
+            <svg width="100%" height="320" viewBox="0 0 600 320" style="background: linear-gradient(135deg, #0f1a24 0%, #1a2540 100%); border-radius: 0.8rem;">
+                <defs>
+                    <style>
+                        @keyframes pulse-green { 0%, 100% { r: 28; } 50% { r: 32; } }
+                        @keyframes pulse-orange { 0%, 100% { r: 28; } 50% { r: 32; } }
+                        @keyframes pulse-red { 0%, 100% { r: 28; } 50% { r: 32; } }
+                        .router-online { animation: pulse-green 2s infinite; }
+                        .router-maintenance { animation: pulse-orange 2s infinite; }
+                        .router-offline { animation: pulse-red 2s infinite; }
+                    </style>
+                    <radialGradient id="grad-online" cx="40%" cy="40%">
+                        <stop offset="0%" style="stop-color:#5eff9b;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#2ef75b;stop-opacity:1" />
+                    </radialGradient>
+                    <radialGradient id="grad-maintenance" cx="40%" cy="40%">
+                        <stop offset="0%" style="stop-color:#ffd166;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ffaa33;stop-opacity:1" />
+                    </radialGradient>
+                    <radialGradient id="grad-offline" cx="40%" cy="40%">
+                        <stop offset="0%" style="stop-color:#ff9fa0;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ff5e7c;stop-opacity:1" />
+                    </radialGradient>
+                    <radialGradient id="hub-grad" cx="40%" cy="40%">
+                        <stop offset="0%" style="stop-color:#73e8ff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#00a6ff;stop-opacity:1" />
+                    </radialGradient>
+                </defs>
+                
+                <!-- Ligne d'arrière-plan (grille subtile) -->
+                <g stroke="rgba(79, 195, 255, 0.1)" stroke-width="1">
+                    <line x1="50%" y1="0" x2="50%" y2="100%"/>
+                    <line x1="0" y1="50%" x2="100%" y2="50%"/>
+                </g>
+                
+                <!-- Hub central -->
+                <circle cx="300" cy="160" r="28" fill="url(#hub-grad)" stroke="#00e5ff" stroke-width="2" filter="drop-shadow(0 0 12px #00a6ff)"/>
+                <text x="300" y="168" text-anchor="middle" fill="white" font-size="18" font-weight="bold">🌐</text>
+                
+                <!-- Routeurs -->
+                @php
+                    $routerCount = max(count($routeurs ?? []), 1);
+                    $radius = 120;
+                @endphp
+                
+                @foreach(($routeurs ?? []) as $index => $routeur)
+                    @php
+                        $angle = (360 / $routerCount) * $index - 90;
+                        $rad = deg2rad($angle);
+                        $cx = 300 + ($radius * cos($rad));
+                        $cy = 160 + ($radius * sin($rad));
+                        
+                        if ($routeur->statut == 'en_ligne') {
+                            $grad = 'grad-online';
+                            $glow = 'drop-shadow(0 0 18px #2ef75b)';
+                            $class = 'router-online';
+                        } elseif ($routeur->statut == 'maintenance') {
+                            $grad = 'grad-maintenance';
+                            $glow = 'drop-shadow(0 0 18px #ffaa33)';
+                            $class = 'router-maintenance';
+                        } else {
+                            $grad = 'grad-offline';
+                            $glow = 'drop-shadow(0 0 18px #ff5e7c)';
+                            $class = 'router-offline';
+                        }
+                    @endphp
+                    
+                    <!-- Ligne vers le hub -->
+                    <line x1="300" y1="160" x2="{{ $cx }}" y2="{{ $cy }}" stroke="{{ $routeur->statut == 'en_ligne' ? '#2ef75b' : ($routeur->statut == 'maintenance' ? '#ffaa33' : '#ff5e7c') }}" stroke-width="2" opacity="0.4" stroke-dasharray="5,5"/>
+                    
+                    <!-- Nœud routeur animé -->
+                    <circle cx="{{ $cx }}" cy="{{ $cy }}" r="28" fill="url(#{{ $grad }})" stroke="{{ $routeur->statut == 'en_ligne' ? '#5eff9b' : ($routeur->statut == 'maintenance' ? '#ffd166' : '#ff9fa0') }}" stroke-width="2.5" filter="{{ $glow }}" class="{{ $class }}"/>
+                    
+                    <!-- Icône routeur -->
+                    <text x="{{ $cx }}" y="{{ $cy + 7 }}" text-anchor="middle" fill="white" font-size="16" font-weight="bold">📡</text>
+                    
+                    <!-- Label routeur -->
+                    <text x="{{ $cx }}" y="{{ $cy + 48 }}" text-anchor="middle" fill="white" font-size="10" font-weight="600" opacity="0.9">
+                        {{ substr($routeur->nom, 0, 10) }}
+                    </text>
+                    <text x="{{ $cx }}" y="{{ $cy + 62 }}" text-anchor="middle" fill="{{ $routeur->statut == 'en_ligne' ? '#2ef75b' : ($routeur->statut == 'maintenance' ? '#ffaa33' : '#ff5e7c') }}" font-size="9" font-weight="500">
+                        {{ $routeur->statut == 'en_ligne' ? '● En ligne' : ($routeur->statut == 'maintenance' ? '● Maintenance' : '● Hors ligne') }}
+                    </text>
+                @endforeach
+                
+                <!-- Légende -->
+                <g transform="translate(10, 290)">
+                    <rect x="0" y="0" width="200" height="25" fill="rgba(0,0,0,0.3)" rx="4" stroke="rgba(79, 195, 255, 0.2)" stroke-width="1"/>
+                    <circle cx="10" cy="12" r="4" fill="#2ef75b"/>
+                    <text x="20" y="16" fill="white" font-size="9">En ligne</text>
+                    
+                    <circle cx="70" cy="12" r="4" fill="#ffaa33"/>
+                    <text x="80" y="16" fill="white" font-size="9">Maintenance</text>
+                    
+                    <circle cx="160" cy="12" r="4" fill="#ff5e7c"/>
+                    <text x="170" y="16" fill="white" font-size="9">Hors ligne</text>
+                </g>
+            </svg>
+        </div>        <div class="card">
             <div class="card-header">
                 <h3><i class="fas fa-chart-line"></i> Performance globale</h3>
                 <i class="fas fa-ellipsis-h"></i>
             </div>
             <div style="margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; color: #aaccff;"><span>Charge CPU moyenne</span> <span>32%</span></div>
-                <div style="height: 8px; background: #1a2c3c; border-radius: 20px; margin: 0.5rem 0 1.5rem;">
-                    <div style="width: 32%; height: 8px; background: linear-gradient(90deg, #00ccff, #904eff); border-radius: 20px;"></div>
+                <div style="margin-bottom: 1.8rem;">
+                    <div style="display: flex; justify-content: space-between; color: #aaccff; margin-bottom: 0.5rem; font-weight: 500;">
+                        <span>Charge CPU moyenne</span> 
+                        <span class="perf-value-cpu" data-value="{{ $globalPerformance['cpu'] ?? 0 }}">{{ number_format($globalPerformance['cpu'] ?? 0, 1, ',', ' ') }}%</span>
+                    </div>
+                    <div style="height: 12px; background: #1a2c3c; border-radius: 20px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+                        <div class="perf-bar-cpu" data-max="100" style="width: 0%; height: 12px; background: linear-gradient(90deg, #00ccff, #904eff); border-radius: 20px; transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); box-shadow: 0 0 12px rgba(144, 78, 255, 0.6);"></div>
+                    </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; color: #aaccff;"><span>Mémoire utilisée</span> <span>45%</span></div>
-                <div style="height: 8px; background: #1a2c3c; border-radius: 20px; margin: 0.5rem 0 1.5rem;">
-                    <div style="width: 45%; height: 8px; background: linear-gradient(90deg, #00ccff, #2ef75b); border-radius: 20px;"></div>
+                
+                <div style="margin-bottom: 1.8rem;">
+                    <div style="display: flex; justify-content: space-between; color: #aaccff; margin-bottom: 0.5rem; font-weight: 500;">
+                        <span>Mémoire utilisée</span> 
+                        <span class="perf-value-mem" data-value="{{ $globalPerformance['memory'] ?? 0 }}">{{ number_format($globalPerformance['memory'] ?? 0, 1, ',', ' ') }}%</span>
+                    </div>
+                    <div style="height: 12px; background: #1a2c3c; border-radius: 20px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+                        <div class="perf-bar-mem" data-max="100" style="width: 0%; height: 12px; background: linear-gradient(90deg, #00ccff, #2ef75b); border-radius: 20px; transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); box-shadow: 0 0 12px rgba(46, 247, 91, 0.6);"></div>
+                    </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; color: #aaccff;"><span>Température moyenne</span> <span>48°C</span></div>
-                <div style="height: 8px; background: #1a2c3c; border-radius: 20px; margin: 0.5rem 0;">
-                    <div style="width: 48%; height: 8px; background: linear-gradient(90deg, #2ef75b, #ffaa33); border-radius: 20px;"></div>
+                
+                <div style="margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; color: #aaccff; margin-bottom: 0.5rem; font-weight: 500;">
+                        <span>Température moyenne</span> 
+                        <span class="perf-value-temp" data-value="{{ $globalPerformance['temperature'] ?? 0 }}">{{ number_format($globalPerformance['temperature'] ?? 0, 1, ',', ' ') }}°C</span>
+                    </div>
+                    <div style="height: 12px; background: #1a2c3c; border-radius: 20px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+                        <div class="perf-bar-temp" data-max="100" style="width: 0%; height: 12px; background: linear-gradient(90deg, #2ef75b, #ffaa33); border-radius: 20px; transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); box-shadow: 0 0 12px rgba(255, 170, 51, 0.6);"></div>
+                    </div>
                 </div>
+            </div>
+            <div style="border-top: 1px solid rgba(110, 166, 228, 0.18); padding-top: 0.8rem; color: #bde4ff;">
+                <strong>Total bande passante :</strong> {{ number_format($totalBandwidth, 0, ',', ' ') }} Mbps
+            </div>
+            <div style="margin-top: 1rem; color: #d6e8ff;">
+                <strong>Top consommateurs</strong>
+                <ul style="margin: 0.6rem 0 0; padding-left: 1.1rem; list-style: disc;">
+                    @forelse($topConsumers as $consumer)
+                        <li>{{ $consumer['routeur'] }} / {{ $consumer['interface'] }} : {{ number_format($consumer['total'], 0, ',', ' ') }} Mbps</li>
+                    @empty
+                        <li>Aucune donnée disponible</li>
+                    @endforelse
+                </ul>
             </div>
         </div>
     </div>
@@ -490,6 +714,63 @@ window.addEventListener('DOMContentLoaded', function() {
         bg.style.display = 'none';
         bg.remove();
     }
+
+    const stats = document.querySelectorAll('.stat-value[data-value]');
+    stats.forEach(el => {
+        const target = parseInt(el.getAttribute('data-value') || '0', 10);
+        if (isNaN(target) || target <= 0) return;
+
+        let current = 0;
+        const step = Math.max(1, Math.floor(target / 60));
+        const timer = setInterval(() => {
+            current = Math.min(target, current + step);
+            el.textContent = current.toLocaleString('fr-FR');
+            el.classList.add('updated');
+
+            if (current >= target) {
+                clearInterval(timer);
+                setTimeout(() => el.classList.remove('updated'), 350);
+            }
+        }, 10);
+    });
+
+    // Animer les barres de performance
+    window.addEventListener('load', function() {
+        const perfBars = [
+            { bar: '.perf-bar-cpu', value: '.perf-value-cpu', duration: 1200 },
+            { bar: '.perf-bar-mem', value: '.perf-value-mem', duration: 1200 },
+            { bar: '.perf-bar-temp', value: '.perf-value-temp', duration: 1200 }
+        ];
+
+        perfBars.forEach(config => {
+            const bar = document.querySelector(config.bar);
+            const value = document.querySelector(config.value);
+            
+            if (!bar || !value) return;
+
+            const targetValue = parseFloat(value.getAttribute('data-value')) || 0;
+            const maxValue = 100;
+            const targetWidth = Math.min((targetValue / maxValue) * 100, 100);
+            
+            setTimeout(() => {
+                bar.style.width = targetWidth + '%';
+                
+                // Animer le texte
+                let current = 0;
+                const step = targetValue / (config.duration / 30);
+                const timer = setInterval(() => {
+                    current = Math.min(current + step, targetValue);
+                    const display = current >= 100 ? current.toFixed(0) : current.toFixed(1);
+                    value.textContent = display.replace('.', ',') + (value.textContent.includes('°C') ? '°C' : '%');
+                    
+                    if (current >= targetValue) {
+                        clearInterval(timer);
+                        value.textContent = (targetValue >= 100 ? targetValue.toFixed(0) : targetValue.toFixed(1)).replace('.', ',') + (value.textContent.includes('°C') ? '°C' : '%');
+                    }
+                }, 30);
+            }, 100);
+        });
+    });
 });
 </script>
 @endsection

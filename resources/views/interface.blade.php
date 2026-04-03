@@ -102,7 +102,7 @@
                         <td>{{ $interface->routeur->nom ?? 'N/A' }}</td>
                         <td>{{ ucfirst($interface->type) }} {{ $interface->bande ? '('.$interface->bande.')' : '' }}</td>
                         <td>{{ $interface->adresse_mac ?? 'N/A' }}</td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <span class="status-{{ $interface->statut == 'actif' ? 'active' : ($interface->statut == 'erreur' ? 'inactive' : 'inactive') }}">
                                 {{ ucfirst($interface->statut) }}
                             </span>
@@ -145,48 +145,115 @@
 
         <!-- Pagination -->
         @if($interfaces->hasPages())
-        <div style="margin-top: 2rem;" class="pagination-wrapper">
-            {{ $interfaces->onEachSide(1)->links() }}
+        <style>
+            .pagination-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border: 1px solid #3a5578;
+                background: #0f1f35;
+                color: #8fa5bd;
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+                text-decoration: none;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                padding: 0;
+            }
+            .pagination-btn:hover {
+                background: #1a2d45;
+                border-color: #5a7fa0;
+                color: #b9d1e8;
+            }
+            .pagination-btn.active {
+                background: #1e3a5d;
+                border-color: #4a8fd4;
+                color: #fff;
+                font-weight: 700;
+                box-shadow: 0 0 10px rgba(74, 143, 212, 0.25);
+            }
+        </style>
+
+        <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="color: #b9cee5; font-size: 0.88rem;">
+                Page <strong>{{ $interfaces->currentPage() }}</strong> / {{ $interfaces->lastPage() }}  •  <strong>{{ $interfaces->total() }}</strong> interface{{ $interfaces->total() > 1 ? 's' : '' }}
+            </div>
+            <div id="interfacesPaginationContainer" style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+                @php
+                    $from = max(1, $interfaces->currentPage() - 2);
+                    $to = min($interfaces->lastPage(), $interfaces->currentPage() + 2);
+                @endphp
+
+                @if($from > 1)
+                    <button class="pagination-btn" onclick="loadInterfacePage(1)">1</button>
+                @endif
+
+                @if($from > 2)
+                    <span style="color: #6b7f96; padding: 0 0.3rem;">…</span>
+                @endif
+
+                @for($page = $from; $page <= $to; $page++)
+                    @if($page === $interfaces->currentPage())
+                        <span class="pagination-btn active">{{ $page }}</span>
+                    @else
+                        <button class="pagination-btn" onclick="loadInterfacePage({{ $page }})">{{ $page }}</button>
+                    @endif
+                @endfor
+
+                @if($to < $interfaces->lastPage() - 1)
+                    <span style="color: #6b7f96; padding: 0 0.3rem;">…</span>
+                @endif
+
+                @if($to < $interfaces->lastPage())
+                    <button class="pagination-btn" onclick="loadInterfacePage({{ $interfaces->lastPage() }})">{{ $interfaces->lastPage() }}</button>
+                @endif
+            </div>
         </div>
+
+        <script>
+            function loadInterfacePage(page) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('page', page);
+                
+                fetch(`{{ route('interfaces.index') }}?${params.toString()}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Remplacer le tbody
+                    const oldTbody = document.querySelector('.table-section tbody');
+                    const newTbody = doc.querySelector('.table-section tbody');
+                    if (oldTbody && newTbody) {
+                        oldTbody.replaceWith(newTbody);
+                    }
+                    
+                    // Remplacer la pagination
+                    const oldPagination = document.getElementById('interfacesPaginationContainer');
+                    const newPagination = doc.getElementById('interfacesPaginationContainer');
+                    if (oldPagination && newPagination) {
+                        oldPagination.replaceWith(newPagination);
+                    }
+                    
+                    // Scroll vers le tableau
+                    document.querySelector('.table-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    // Mettre à jour l'URL
+                    window.history.pushState(null, '', `{{ route('interfaces.index') }}?${params.toString()}`);
+                })
+                .catch(error => console.error('Erreur chargement:', error));
+            }
+        </script>
         @endif
     </div>
-
-    <!-- Graphiques d'utilisation -->
-    <div class="router-section" style="margin-top: 2rem;">
-        <div class="card">
-            <div class="card-header">
-                <h3><i class="fas fa-chart-bar"></i> Top 5 interfaces par trafic</h3>
-                <span class="status-badge">24h</span>
-            </div>
-            <div style="padding: 1rem 0;">
-                @foreach($topInterfaces ?? [] as $index => $interface)
-                <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                    <div style="width: 150px;">{{ $interface->nom }}</div>
-                    <div style="flex: 1; height: 24px; background: #1a2c3c; border-radius: 12px; margin: 0 1rem;">
-                        <div style="width: {{ $interface->pourcentage ?? 50 }}%; height: 24px; background: linear-gradient(90deg, #00ccff, #904eff); border-radius: 12px;"></div>
-                    </div>
-                    <div>{{ number_format($interface->debit_entrant + $interface->debit_sortant, 1) }} Mbps</div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <h3><i class="fas fa-chart-pie"></i> Répartition par type</h3>
-                <i class="fas fa-ellipsis-h"></i>
-            </div>
-            <div style="display: flex; justify-content: center; padding: 1rem;">
-                <div style="width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(#00ccff 0% 45%, #904eff 45% 70%, #2ef75b 70% 85%, #ffaa33 85% 100%);"></div>
-                <div style="margin-left: 2rem;">
-                    <div><span style="display: inline-block; width: 12px; height: 12px; background: #00ccff; border-radius: 3px;"></span> Ethernet: 45%</div>
-                    <div><span style="display: inline-block; width: 12px; height: 12px; background: #904eff; border-radius: 3px;"></span> WiFi: 25%</div>
-                    <div><span style="display: inline-block; width: 12px; height: 12px; background: #2ef75b; border-radius: 3px;"></span> Bridge: 15%</div>
-                    <div><span style="display: inline-block; width: 12px; height: 12px; background: #ffaa33; border-radius: 3px;"></span> VLAN: 15%</div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
+
 
 <!-- MODAL AJOUTER/MODIFIER UNE INTERFACE -->
 <div id="interfaceModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">

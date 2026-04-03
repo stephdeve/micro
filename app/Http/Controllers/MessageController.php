@@ -31,7 +31,11 @@ class MessageController extends Controller
                 $query->where('receiver_id', Auth::id())->where('is_starred', true);
                 break;
             case 'archive':
-                $query->where('receiver_id', Auth::id())->where('folder', 'archive');
+                $query->where('folder', 'archive')
+                      ->where(function($q) {
+                          $q->where('receiver_id', Auth::id())
+                            ->orWhere('sender_id', Auth::id());
+                      });
                 break;
             case 'trash':
                 $query->where('receiver_id', Auth::id())->where('folder', 'trash');
@@ -92,7 +96,8 @@ class MessageController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'receiver_id' => 'required|exists:users,id',
+            'receiver_id' => 'required_if:send_to_all,0|nullable|exists:users,id',
+            'send_to_all' => 'nullable|boolean',
             'subject' => 'required|string|max:255',
             'content' => 'required|string',
             'priority' => 'in:basse,normale,haute,urgente',
@@ -100,44 +105,75 @@ class MessageController extends Controller
             'attachments.*' => 'nullable|file|max:10240', // 10MB max
         ]);
 
-        $message = Message::create([
+        $sendToAll = $request->boolean('send_to_all');
+        $receivers = $sendToAll
+            ? User::where('id', '!=', Auth::id())->get()
+            : User::where('id', $request->receiver_id)->get();
+
+        // Message envoyé (archive envoyé)
+        $encryptedContent = $request->is_secure ? Crypt::encryptString($request->content) : $request->content;
+
+        $sentMessage = Message::create([
             'sender_id' => Auth::id(),
-            'receiver_id' => $request->receiver_id,
+            'receiver_id' => $sendToAll ? null : $request->receiver_id,
             'subject' => $request->subject,
-            'content' => $request->is_secure ? Crypt::encryptString($request->content) : $request->content,
+            'content' => $encryptedContent,
             'priority' => $request->priority ?? 'normale',
             'is_secure' => $request->has('is_secure'),
             'folder' => 'sent',
             'tag' => $request->tag ?? 'reseau',
         ]);
 
-        // Gérer les pièces jointes
+        $attachmentParams = [];
+        // Gérer les pièces jointes pour le message envoyé et en copie
         if ($request->hasFile('attachments')) {
-            $message->has_attachments = true;
-            $message->save();
+            $sentMessage->has_attachments = true;
+            $sentMessage->save();
 
             foreach ($request->file('attachments') as $file) {
-                $path = $file->store('attachments/' . $message->id, 'public');
-                
-                $message->attachments()->create([
+                $path = $file->store('attachments/' . $sentMessage->id, 'public');
+                $attachmentParams[] = [
                     'filename' => $file->getClientOriginalName(),
                     'original_filename' => $file->getClientOriginalName(),
                     'file_path' => $path,
                     'file_size' => $file->getSize(),
                     'file_type' => $file->getMimeType(),
-                ]);
+                ];
+            }
+
+            foreach ($attachmentParams as $params) {
+                $sentMessage->attachments()->create($params);
             }
         }
 
-        // Envoyer notification
-        $receiver = User::find($request->receiver_id);
-        if ($receiver) {
+        // Créer le message pour chaque destinataire (inbox)
+        foreach ($receivers as $receiver) {
+            $receiverMessage = Message::create([
+                'sender_id' => Auth::id(),
+                'receiver_id' => $receiver->id,
+                'subject' => $request->subject,
+                'content' => $encryptedContent,
+                'priority' => $request->priority ?? 'normale',
+                'is_secure' => $request->has('is_secure'),
+                'folder' => 'inbox',
+                'tag' => $request->tag ?? 'reseau',
+            ]);
+
+            if (!empty($attachmentParams)) {
+                $receiverMessage->has_attachments = true;
+                $receiverMessage->save();
+                foreach ($attachmentParams as $params) {
+                    $receiverMessage->attachments()->create($params);
+                }
+            }
+
+            // Notification pour chaque destinataire
             $receiver->notify(new \App\Notifications\GenericNotification(
                 'Nouveau message reçu',
                 'Vous avez reçu un message de ' . Auth::user()->name . ' : ' . $request->subject,
                 route('messagerie.index', ['folder' => 'inbox']),
                 'message',
-                $message->id,
+                $receiverMessage->id,
                 $request->subject
             ));
         }
@@ -216,10 +252,16 @@ class MessageController extends Controller
     public function restore($id)
     {
         $message = Message::withTrashed()->findOrFail($id);
+        
+        // Vérifier que le message appartient à l'utilisateur
+        if ($message->receiver_id !== Auth::id() && $message->sender_id !== Auth::id()) {
+            abort(403, 'Non autorisé');
+        }
+        
         $message->folder = 'inbox';
         $message->save();
 
-        return redirect()->route('messagerie.index')->with('success', 'Message restauré.');
+        return redirect()->route('messagerie.index', ['folder' => 'inbox'])->with('success', 'Message restauré.');
     }
 
     /**
@@ -227,8 +269,13 @@ class MessageController extends Controller
      */
     public function archive(Message $messagerie)
     {
+        // Vérifier que le message appartient à l'utilisateur (en tant que destinataire ou expéditeur)
+        if ($messagerie->receiver_id !== Auth::id() && $messagerie->sender_id !== Auth::id()) {
+            abort(403, 'Non autorisé');
+        }
+
         $messagerie->update(['folder' => 'archive']);
-        return redirect()->route('messagerie.index')->with('success', 'Message archivé.');
+        return redirect()->route('messagerie.index', ['folder' => 'archive'])->with('success', 'Message archivé.');
     }
 
     /**
@@ -236,6 +283,11 @@ class MessageController extends Controller
      */
     public function toggleStar(Message $messagerie)
     {
+        // Vérifier que le message appartient à l'utilisateur
+        if ($messagerie->receiver_id !== Auth::id() && $messagerie->sender_id !== Auth::id()) {
+            abort(403, 'Non autorisé');
+        }
+
         $messagerie->update(['is_starred' => !$messagerie->is_starred]);
         return response()->json(['success' => true, 'is_starred' => $messagerie->is_starred]);
     }

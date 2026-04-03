@@ -37,7 +37,7 @@ class InterfaceModelController extends Controller
             });
         }
 
-        $interfaces = $query->latest()->paginate(10);
+        $interfaces = $query->latest()->paginate(5);
         
         // Récupérer tous les routeurs pour les filtres
         $routeurs = Routeur::orderBy('nom')->get();
@@ -243,28 +243,37 @@ class InterfaceModelController extends Controller
      */
     public function toggle(InterfaceModel $interface)
     {
-        $interface->est_active = !$interface->est_active;
-        $interface->statut = $interface->est_active ? 'actif' : 'inactif';
-        $interface->save();
+        try {
+            $interface->est_active = !$interface->est_active;
+            $interface->statut = $interface->est_active ? 'actif' : 'inactif';
+            $interface->save();
 
-        // Notification pour activation/désactivation
-        $action = $interface->est_active ? 'activée' : 'désactivée';
-        Auth::user()->notify(new \App\Notifications\GenericNotification(
-            "Interface {$action}",
-            "L'interface {$interface->nom} du routeur {$interface->routeur->nom} a été {$action}.",
-            route('interfaces.index')
-        ));
+            // Notification pour activation/désactivation
+            $action = $interface->est_active ? 'activée' : 'désactivée';
+            $routeurNom = $interface->routeur?->nom ?? 'Inconnu';
+            
+            Auth::user()->notify(new \App\Notifications\GenericNotification(
+                "Interface {$action}",
+                "L'interface {$interface->nom} du routeur {$routeurNom} a été {$action}.",
+                route('interfaces.index')
+            ));
 
-        if (request()->wantsJson() || request()->ajax()) {
-            return response()->json([
-                'success' => true, 
-                'est_active' => $interface->est_active,
-                'statut' => $interface->statut
-            ]);
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => true, 
+                    'est_active' => $interface->est_active,
+                    'statut' => $interface->statut
+                ]);
+            }
+
+            return redirect()->route('interfaces.index')->with('success', 
+                'Interface ' . ($interface->est_active ? 'activée' : 'désactivée') . ' avec succès.');
+        } catch (\Exception $e) {
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Erreur lors de la modification : ' . $e->getMessage());
         }
-
-        return redirect()->route('interfaces.index')->with('success', 
-            'Interface ' . ($interface->est_active ? 'activée' : 'désactivée') . ' avec succès.');
     }
 
     /**

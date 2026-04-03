@@ -3,7 +3,7 @@
 @section('title', 'Modifier interface')
 
 @php
-    $header_buttons = '<a href="'.route('interfaces.index').'" class="btn-icon" style="width: auto; padding: 0 1.5rem; border-radius: 2rem;"><i class="fas fa-arrow-left"></i> Retour</a>';
+    $header_buttons = '<a href="'.route('interfaces.index').'" class="btn-secondary" style="width: auto; padding: 0.65rem 1.2rem; border-radius: 2rem;"><i class="fas fa-arrow-left" style="margin-right: 0.4rem;"></i>Retour</a>';
 @endphp
 
 @section('content')

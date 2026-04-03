@@ -8,10 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('messages', function (Blueprint $table) {
-            $table->string('tag')->nullable()->default('reseau')->after('folder');
-            $table->index('tag');
-        });
+        if (! Schema::hasColumn('messages', 'tag')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->string('tag')->nullable()->default('reseau')->after('folder');
+                $table->index('tag');
+            });
+        }
     }
 
     public function down(): void

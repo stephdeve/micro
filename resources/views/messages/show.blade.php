@@ -13,7 +13,7 @@
     <div class="card" style="padding: 1.5rem;">
         <div class="message-header-container">
             <h2 class="message-title">{{ $message->subject }}</h2>
-            <a href="{{ route('messagerie.index', ['folder' => request('folder', 'inbox')]) }}" class="btn-back"><i class="fas fa-arrow-left"></i> Retour</a>
+            <a href="{{ route('messagerie.index', ['folder' => request('folder', 'inbox')]) }}" class="btn-secondary" style="width: auto; padding: 0.65rem 1.2rem;"><i class="fas fa-arrow-left" style="margin-right: 0.4rem;"></i>Retour</a>
         </div>
 
         <div class="message-meta">

@@ -45,6 +45,11 @@
         <a href="{{ route('parametres.index') }}" class="nav-item {{ request()->routeIs('parametres.*') ? 'active' : '' }}">
             <i class="fas fa-cog"></i> Paramètres
         </a>
+        @if(Auth::user()->hasRole('admin'))
+            <a href="{{ route('users.index') }}" class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                <i class="fas fa-users-cog"></i> Gestion des employés
+            </a>
+        @endif
     </div>
 
     <!-- Déconnexion sidebar -->

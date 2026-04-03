@@ -186,17 +186,27 @@
     .info-item {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 1rem;
-        font-size: 0.95rem;
+        align-items: center;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid rgba(50, 100, 150, 0.3);
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
     }
 
     .info-label {
-        color: #8ba9d0;
+        color: #7a95b8;
+        font-size: 0.9rem;
+        font-weight: 500;
     }
 
     .info-value {
         font-weight: 600;
-        color: white;
+        color: #e0f2ff;
+        text-align: right;
+        flex-grow: 1;
+        padding-left: 1rem;
     }
 
     .tab-content {
@@ -219,6 +229,11 @@
     </div>
 
     @include('layouts.guest')
+
+    <!-- Notifications de succès/erreur -->
+    <div id="notification" style="display: none; padding: 1rem; margin-bottom: 1.5rem; border-radius: 1rem; border-left: 4px solid; font-weight: 600;">
+        <i id="notifIcon" class="fas"></i> <span id="notifText"></span>
+    </div>
 
     <!-- Onglets -->
     <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 2.2rem; border-bottom: 1px solid #1d3347; padding-bottom: 1.2rem;">
@@ -270,15 +285,6 @@
                             <option value="60" {{ ($parametres['intervalle_refresh'] ?? '60') == '60' ? 'selected' : '' }}>1 minute</option>
                             <option value="120" {{ ($parametres['intervalle_refresh'] ?? '') == '120' ? 'selected' : '' }}>2 minutes</option>
                             <option value="300" {{ ($parametres['intervalle_refresh'] ?? '') == '300' ? 'selected' : '' }}>5 minutes</option>
-                        </select>
-                    </div>
-
-                    <div style="margin-bottom: 1.6rem;">
-                        <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Thème de l'interface</label>
-                        <select name="theme" class="input-field">
-                            <option value="dark_cyber" {{ ($parametres['theme'] ?? 'dark_cyber') == 'dark_cyber' ? 'selected' : '' }}>Dark Cyber</option>
-                            <option value="light" {{ ($parametres['theme'] ?? '') == 'light' ? 'selected' : '' }}>Light Mode</option>
-                            <option value="neon_blue" {{ ($parametres['theme'] ?? '') == 'neon_blue' ? 'selected' : '' }}>Neon Blue</option>
                         </select>
                     </div>
 
@@ -439,29 +445,48 @@
 </div>
 
 <script>
+    function showNotification(message, isSuccess = true) {
+        const notif = document.getElementById('notification');
+        const icon = document.getElementById('notifIcon');
+        const text = document.getElementById('notifText');
+        
+        notif.style.display = 'block';
+        notif.style.borderLeftColor = isSuccess ? '#2ef75b' : '#ff5e7c';
+        notif.style.background = isSuccess ? 'rgba(46, 247, 91, 0.1)' : 'rgba(255, 94, 124, 0.1)';
+        notif.style.color = isSuccess ? '#2ef75b' : '#ff5e7c';
+        
+        icon.className = isSuccess ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+        text.textContent = message;
+        
+        setTimeout(() => {
+            notif.style.display = 'none';
+        }, 4000);
+    }
+
     // Gestion des onglets
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.addEventListener('click', () => {
-            // Retirer la classe active de tous les boutons
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-            // Ajouter la classe active au bouton cliqué
             btn.classList.add('active');
             
-            // Masquer tous les contenus d'onglets
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
             
-            // Afficher le contenu de l'onglet sélectionné
             const tabId = btn.getAttribute('data-tab') + '-tab';
             document.getElementById(tabId).classList.add('active');
         });
     });
 
-    // Gestion des formulaires
+    // Gestion des formulaires avec AJAX
     document.querySelectorAll('form').forEach(form => {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
             
             const formData = new FormData(this);
             const data = {};
@@ -469,7 +494,6 @@
                 data[key] = value;
             }
             
-            // Envoyer via AJAX
             fetch('{{ route("parametres.updateAll") }}', {
                 method: 'PUT',
                 headers: {
@@ -480,37 +504,105 @@
             })
             .then(response => response.json())
             .then(result => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                
                 if (result.success) {
-                    alert('Paramètres enregistrés avec succès !');
-                    if (window.refreshNotifications) {
-                        window.refreshNotifications();
-                    }
+                    showNotification('✅ Paramètres enregistrés avec succès !', true);
                 } else {
-                    alert('Erreur lors de l\'enregistrement : ' + (result.message || 'Erreur inconnue'));
+                    showNotification('❌ ' + (result.message || 'Erreur lors de l\'enregistrement'), false);
                 }
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                alert('Erreur lors de l\'enregistrement');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                showNotification('❌ Erreur de connexion', false);
             });
         });
     });
 
-    // Fonctions pour les boutons de sauvegarde
+    // Boutons de sauvegarde
     function downloadBackup() {
-        alert('Fonction de téléchargement de sauvegarde à implémenter');
+        if (confirm('Télécharger une sauvegarde du système ?')) {
+            window.location.href = '{{ route("parametres.backup.download") }}';
+        }
     }
 
     function restoreBackup() {
-        alert('Fonction de restauration de sauvegarde à implémenter');
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip,.tar,.sql';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('backup', file);
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                
+                fetch('{{ route("parametres.backup.restore") }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        showNotification('✅ Sauvegarde restaurée ! Rechargement en cours...', true);
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showNotification('❌ ' + (result.message || 'Erreur lors de la restauration'), false);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showNotification('❌ Erreur lors du chargement du fichier', false);
+                });
+            }
+        };
+        input.click();
     }
 
     function checkUpdates() {
-        alert('Fonction de vérification des mises à jour à implémenter');
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification...';
+        
+        fetch('{{ route("parametres.check-updates") }}', {
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            
+            if (result.success) {
+                if (result.updates_available) {
+                    showNotification(`✅ ${result.message} (v${result.latest_version})`, true);
+                } else {
+                    showNotification('✅ Système à jour !', true);
+                }
+            } else {
+                showNotification('❌ ' + (result.message || 'Erreur lors de la vérification'), false);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            showNotification('❌ Erreur de connexion', false);
+        });
     }
 
     function regenerateApiKey() {
-        if (confirm('Êtes-vous sûr de vouloir régénérer la clé API ? Cela invalidera l\'ancienne clé.')) {
+        if (confirm('Êtes-vous sûr ? Cela invalidera l\'ancienne clé API.')) {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
+            
             fetch('{{ route("parametres.updateAll") }}', {
                 method: 'PUT',
                 headers: {
@@ -521,21 +613,22 @@
             })
             .then(response => response.json())
             .then(result => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                
                 if (result.success && result.api_key) {
                     document.querySelector('input[name="api_key"]').value = result.api_key;
-                    alert('Clé API régénérée avec succès !');
-                    if (window.refreshNotifications) {
-                        window.refreshNotifications();
-                    }
+                    showNotification('✅ Clé API régénérée avec succès !', true);
                 } else {
-                    alert('Erreur lors de la régénération de la clé API');
+                    showNotification('❌ Erreur lors de la régénération', false);
                 }
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                alert('Erreur lors de la régénération');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                showNotification('❌ Erreur de connexion', false);
             });
         }
     }
 </script>
-@endsection

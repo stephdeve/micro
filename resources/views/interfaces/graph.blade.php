@@ -18,7 +18,7 @@
         <div class="card">
             <div class="card-header">
                 <h3><i class="fas fa-chart-line"></i> Graphiques de trafic pour {{ $interface->nom }}</h3>
-                <a href="{{ route('interfaces.index') }}" class="btn-add"><i class="fas fa-arrow-left"></i> Retour</a>
+                <a href="{{ route('interfaces.index') }}" class="btn-secondary" style="width: auto; padding: 0.65rem 1.2rem;"><i class="fas fa-arrow-left" style="margin-right: 0.4rem;"></i>Retour</a>
             </div>
 
             <div style="padding: 1rem;">

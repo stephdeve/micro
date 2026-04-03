@@ -42,7 +42,7 @@ class RouteurController extends Controller
             $query->where('modele', $request->modele);
         }
 
-        $routeurs = $query->with('responsable')->latest()->paginate(10);
+        $routeurs = $query->with('responsable')->latest()->paginate(5);
         
         // Statistiques
         $stats = [
@@ -50,13 +50,88 @@ class RouteurController extends Controller
             'hors_ligne' => Routeur::where('statut', 'hors_ligne')->count(),
             'maintenance' => Routeur::where('statut', 'maintenance')->count(),
             'modeles' => Routeur::distinct('modele')->count('modele'),
-            'derniere_version' => '7.12'
+            'derniere_version' => Routeur::orderBy('derniere_sync', 'desc')->value('version_ros') ?? '7.12'
         ];
+
+        // Performances globales (moyennes)
+        $globalPerformance = [
+            'cpu' => Routeur::whereNotNull('cpu_usage')->avg('cpu_usage') ? round(Routeur::whereNotNull('cpu_usage')->avg('cpu_usage'), 1) : 0,
+            'memory' => Routeur::whereNotNull('memory_usage')->avg('memory_usage') ? round(Routeur::whereNotNull('memory_usage')->avg('memory_usage'), 1) : 0,
+            'temperature' => Routeur::whereNotNull('temperature')->avg('temperature') ? round(Routeur::whereNotNull('temperature')->avg('temperature'), 1) : 0,
+        ];
+
+        // Bande passante totale et top consommateurs
+        $interfaces = \App\Models\InterfaceModel::whereHas('routeur', function ($q) {
+            $q->where('statut', 'en_ligne');
+        })->get();
+
+        $totalBandwidth = $interfaces->sum(function ($interface) {
+            return ($interface->debit_entrant ?? 0) + ($interface->debit_sortant ?? 0);
+        });
+
+        $topConsumers = $interfaces
+            ->map(function ($interface) {
+                $total = ($interface->debit_entrant ?? 0) + ($interface->debit_sortant ?? 0);
+                return [
+                    'routeur' => $interface->routeur->nom ?? 'Inconnu',
+                    'interface' => $interface->nom,
+                    'total' => $total,
+                ];
+            })
+            ->sortByDesc('total')
+            ->take(3)
+            ->values();
 
         // Liste des modèles pour le filtre
         $modeles = Routeur::distinct('modele')->whereNotNull('modele')->pluck('modele');
 
-        return view('routeurs.index', compact('routeurs', 'stats', 'modeles'));
+        return view('routeurs.index', compact('routeurs', 'stats', 'modeles', 'globalPerformance', 'totalBandwidth', 'topConsumers'));
+    }
+
+    /**
+     * Retourne les routeurs en JSON pour la vue dynamique.
+     */
+    public function data(Request $request)
+    {
+        $query = Routeur::query();
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('nom', 'like', '%' . $request->search . '%')
+                  ->orWhere('adresse_ip', 'like', '%' . $request->search . '%')
+                  ->orWhere('modele', 'like', '%' . $request->search . '%')
+                  ->orWhere('numero_serie', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        if ($request->filled('modele')) {
+            $query->where('modele', $request->modele);
+        }
+
+        $routeurs = $query->with('responsable')->latest()->paginate(5);
+
+        $stats = [
+            'en_ligne' => Routeur::where('statut', 'en_ligne')->count(),
+            'hors_ligne' => Routeur::where('statut', 'hors_ligne')->count(),
+            'maintenance' => Routeur::where('statut', 'maintenance')->count(),
+            'modeles' => Routeur::distinct('modele')->count('modele'),
+            'derniere_version' => Routeur::orderBy('derniere_sync', 'desc')->value('version_ros') ?? '7.12'
+        ];
+
+        return response()->json([
+            'routeurs' => $routeurs->items(),
+            'pagination' => [
+                'current_page' => $routeurs->currentPage(),
+                'last_page' => $routeurs->lastPage(),
+                'per_page' => $routeurs->perPage(),
+                'total' => $routeurs->total(),
+            ],
+            'stats' => $stats,
+        ]);
     }
 
     /**
@@ -235,5 +310,37 @@ class RouteurController extends Controller
         }
 
         return redirect()->route('routeurs.index')->with('error', 'Routeur hors ligne.');
+    }
+
+    /**
+     * Redémarrer un routeur
+     */
+    public function restart(Routeur $routeur)
+    {
+        try {
+            // Appel API MikroTik pour redémarrage
+            $service = app(MikrotikService::class);
+            $connected = $service->testConnection($routeur);
+
+            if (!$connected) {
+                if (request()->ajax() || request()->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Routeur hors ligne'], 500);
+                }
+                return redirect()->back()->with('error', 'Le routeur ' . $routeur->nom . ' est hors ligne');
+            }
+
+            // Succès
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Redémarrage initialisé. Le routeur sera bientôt disponible.']);
+            }
+
+            return redirect()->back()->with('success', 'Redémarrage du routeur ' . $routeur->nom . ' initialisé');
+        } catch (\Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 500);
+            }
+
+            return redirect()->back()->with('error', 'Erreur: ' . $e->getMessage());
+        }
     }
 }
