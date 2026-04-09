@@ -6,7 +6,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RouteurController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ParametreController;
 use App\Http\Controllers\SecuriteController;
 use App\Http\Controllers\StatistiqueController;
@@ -14,13 +13,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
-    return view('auth.login');
-});
-
-// Routes d'authentification
-Route::middleware('guest')->group(function () {
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
 
 // Routes protégées par authentification
@@ -39,12 +32,17 @@ Route::middleware('auth')->group(function () {
 
     // Routes des différents modules
     Route::get('routeurs/data', [RouteurController::class, 'data'])->name('routeurs.data');
-    Route::resource('routeurs', RouteurController::class);
     Route::get('routeurs/{routeur}/sync', [RouteurController::class, 'sync'])->name('routeurs.sync');
     Route::post('routeurs/{routeur}/restart', [RouteurController::class, 'restart'])->name('routeurs.restart');
-    Route::resource('interfaces', InterfaceModelController::class);
+    Route::resource('routeurs', RouteurController::class);
     Route::get('interfaces/{interface}/toggle', [InterfaceModelController::class, 'toggle'])->name('interfaces.toggle');
     Route::get('interfaces/{interface}/graph', [InterfaceModelController::class, 'graph'])->name('interfaces.graph');
+    Route::resource('interfaces', InterfaceModelController::class);
+    Route::post('messagerie/{messagerie}/star', [MessageController::class, 'toggleStar'])->name('messagerie.star');
+    Route::post('messagerie/{messagerie}/archive', [MessageController::class, 'archive'])->name('messagerie.archive');
+    Route::post('messagerie/{messagerie}/restore', [MessageController::class, 'restore'])->name('messagerie.restore');
+    Route::post('messagerie/batch/action', [MessageController::class, 'batchAction'])->name('messagerie.batch.action');
+    Route::get('messagerie/{messagerie}/attachments/{attachment}/download', [MessageController::class, 'downloadAttachment'])->name('messagerie.attachments.download');
     Route::resource('messagerie', MessageController::class);
     Route::resource('users', UserController::class);
 
@@ -79,8 +77,6 @@ Route::middleware('auth')->group(function () {
     // Statistiques
     Route::get('statistiques', [StatistiqueController::class, 'index'])->name('statistiques.index');
 
-    // Route de déconnexion
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
 require __DIR__.'/auth.php';

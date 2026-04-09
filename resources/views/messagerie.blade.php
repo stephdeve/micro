@@ -141,6 +141,16 @@
                 </form>
             </div>
 
+            <!-- Barre de sélection -->
+            <div style="padding: 0.75rem 1rem; background: #0f1f2f; border-bottom: 1px solid #1d3347; display: flex; align-items: center; gap: 1rem;">
+                <button id="selectAllBtn" type="button" onclick="toggleSelectAll()" class="btn-icon" style="width: auto; padding: 0.4rem 0.8rem; background: #2a5a8a; border-radius: 0.5rem; font-size: 0.9rem;">
+                    <i class="fas fa-check-square"></i> Sélectionner tout
+                </button>
+                <span id="selectCounter" style="color: #8ba9d0; font-size: 0.9rem; display: none;">
+                    0 / <span id="totalMessages">{{ count($messages) }}</span>
+                </span>
+            </div>
+
             <!-- Liste des messages -->
             <div style="max-height: 500px; overflow-y: auto;">
                 @forelse($messages as $message)
@@ -150,7 +160,7 @@
                             cursor: pointer;"
                      onclick="window.location='{{ route('messagerie.show', $message) }}'">
                     <div style="display: flex; gap: 1rem; align-items: center; padding: 0.5rem;">
-                        <input type="checkbox" onclick="event.stopPropagation()" value="{{ $message->id }}">
+                        <input type="checkbox" onclick="event.stopPropagation()" onchange="updateBatchPanel()" value="{{ $message->id }}">
                         <i class="fas fa-star {{ $message->is_starred ? 'text-warning' : '' }}" 
                            style="color: {{ $message->is_starred ? '#ffaa33' : '#4f6682' }}; cursor: pointer;"
                            onclick="event.stopPropagation(); toggleStar({{ $message->id }})"></i>
@@ -190,6 +200,30 @@
                     <p>Aucun message dans cette boîte</p>
                 </div>
                 @endforelse
+            </div>
+
+            <!-- Panneau d'actions batch -->
+            <div id="batchPanel" style="display: none; padding: 1rem; background: #1a3a5c; border-top: 1px solid #1d3347; border-bottom: 1px solid #1d3347;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%;">
+                    <div style="color: #8ba9d0;">
+                        <span id="selectedCount" class="selection-badge">0</span> message(s) sélectionné(s)
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        @php $isTrash = request('folder') === 'trash'; @endphp
+                        @if(!$isTrash)
+                            <button onclick="batchAction('trash')" class="btn-icon" style="width: auto; padding: 0.5rem 1rem; background: #ff5e7c; border-radius: 0.5rem;">
+                                <i class="fas fa-trash"></i> Vers la corbeille
+                            </button>
+                        @else
+                            <button onclick="batchAction('delete')" class="btn-icon" style="width: auto; padding: 0.5rem 1rem; background: #8b0000; border-radius: 0.5rem;">
+                                <i class="fas fa-trash-alt"></i> Supprimer définitivement
+                            </button>
+                        @endif
+                        <button onclick="deselectAllMessages()" class="btn-icon" style="width: auto; padding: 0.5rem 1rem; background: #4f6682; border-radius: 0.5rem;">
+                            <i class="fas fa-times"></i> Désélectionner
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Pagination -->
@@ -363,6 +397,23 @@
 .checkbox-label:hover {
     color: #d8f4ff;
 }
+
+.selection-badge {
+    display: inline-block;
+    min-width: 2.2rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(167, 214, 255, 0.18);
+    color: #d8f4ff;
+    font-weight: 700;
+    text-align: center;
+    transition: transform 160ms ease, background 160ms ease;
+}
+
+.selection-badge.pulse {
+    transform: scale(1.08);
+    background: rgba(255, 255, 255, 0.16);
+}
 </style>
 
 <script>
@@ -441,6 +492,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         fetch(form.action, {
             method: 'POST',
+            credentials: 'same-origin',
+            mode: 'same-origin',
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
@@ -528,6 +581,134 @@ document.addEventListener('DOMContentLoaded', function() {
             closeComposeModal();
         }
     };
+
+    // Gestion des sélections batch
+    window.updateBatchPanel = function() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+        const selected = Array.from(checkboxes).filter(cb => cb.checked);
+        const batchPanel = document.getElementById('batchPanel');
+        const selectedCount = document.getElementById('selectedCount');
+        const selectCounter = document.getElementById('selectCounter');
+        const totalMessagesSpan = document.getElementById('totalMessages');
+        const totalMessages = totalMessagesSpan ? totalMessagesSpan.textContent : checkboxes.length;
+
+        const previousCount = Number(selectedCount?.dataset.previous || 0);
+        if (selected.length > 0) {
+            if (selectedCount) {
+                selectedCount.textContent = selected.length;
+                selectedCount.dataset.previous = selected.length;
+                selectedCount.classList.add('pulse');
+                setTimeout(() => selectedCount.classList.remove('pulse'), 220);
+            }
+            if (batchPanel) {
+                batchPanel.style.display = 'block';
+            }
+            if (selectCounter) {
+                selectCounter.style.display = 'inline';
+                selectCounter.innerHTML = `${selected.length} / <span id="totalMessages">${totalMessages}</span> sélectionné(s)`;
+            }
+        } else {
+            if (previousCount !== 0 && selectedCount) {
+                selectedCount.dataset.previous = 0;
+            }
+            if (batchPanel) {
+                batchPanel.style.display = 'none';
+            }
+            if (selectCounter) {
+                selectCounter.style.display = 'none';
+            }
+        }
+
+        updateSelectAllBtn();
+    };
+
+    window.updateSelectAllBtn = function() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        
+        if (checkboxes.length > 0 && allChecked) {
+            selectAllBtn.innerHTML = '<i class="fas fa-check-square"></i> Désélectionner tout';
+            selectAllBtn.style.background = '#8b6600';
+        } else {
+            selectAllBtn.innerHTML = '<i class="fas fa-check-square"></i> Sélectionner tout';
+            selectAllBtn.style.background = '#2a5a8a';
+        }
+    };
+
+    window.toggleSelectAll = function() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        
+        checkboxes.forEach(cb => {
+            cb.checked = !allChecked;
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        
+        updateBatchPanel();
+    };
+
+    window.deselectAllMessages = function() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+        checkboxes.forEach(cb => cb.checked = false);
+        updateBatchPanel();
+    };
+
+    document.querySelectorAll('input[type="checkbox"][value]').forEach(cb => {
+        cb.addEventListener('change', updateBatchPanel);
+    });
+
+    updateBatchPanel();
+
+    window.batchAction = function(action) {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+        const selected = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        if (selected.length === 0) {
+            alert('Veuillez sélectionner au moins un message.');
+            return;
+        }
+
+        fetch('{{ route('messagerie.batch.action') }}', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                message_ids: selected,
+                action: action
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erreur ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('✅ Action effectuée:', data);
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('❌ Erreur:', error);
+            alert('Erreur lors de l\'action: ' + error.message);
+        });
+    };
+
+    // Ajouter les event listeners aux checkboxes
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][value]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBatchPanel);
+    });
+
+    window.updateBatchPanel();
+    window.updateSelectAllBtn();
 });
 </script>
 @endsection

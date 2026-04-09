@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Message;
 use App\Models\User;
+use App\Notifications\MessageReceivedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 
@@ -168,18 +170,25 @@ class MessageController extends Controller
             }
 
             // Notification pour chaque destinataire
-            $receiver->notify(new \App\Notifications\GenericNotification(
-                'Nouveau message reçu',
-                'Vous avez reçu un message de ' . Auth::user()->name . ' : ' . $request->subject,
-                route('messagerie.index', ['folder' => 'inbox']),
-                'message',
-                $receiverMessage->id,
-                $request->subject
-            ));
+            try {
+                $receiver->notify(new MessageReceivedNotification(
+                    Auth::user()->name,
+                    $request->subject,
+                    'Vous avez reçu un message de ' . Auth::user()->name . ' : ' . $request->subject,
+                    route('messagerie.show', $receiverMessage),
+                    $receiverMessage->id
+                ));
+            } catch (\Exception $e) {
+                Log::error('Notification email message failed', [
+                    'receiver_id' => $receiver->id,
+                    'message_id' => $receiverMessage->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => $message]);
+            return response()->json(['success' => true, 'message' => $sentMessage]);
         }
 
         return redirect()->route('messagerie.index')->with('success', 'Message envoyé avec succès.');
@@ -301,5 +310,45 @@ class MessageController extends Controller
         $file = $message->attachments()->findOrFail($attachment);
         
         return Storage::disk('public')->download($file->file_path, $file->filename);
+    }
+
+    /**
+     * Effectuer une action en batch sur plusieurs messages.
+     */
+    public function batchAction(Request $request)
+    {
+        $request->validate([
+            'message_ids' => 'required|array|min:1',
+            'message_ids.*' => 'exists:messages,id',
+            'action' => 'required|in:trash,delete',
+        ]);
+
+        $messageIds = $request->message_ids;
+        $action = $request->action;
+
+        if ($action === 'trash') {
+            // Déplacer vers la corbeille
+            Message::whereIn('id', $messageIds)
+                ->where(function($q) {
+                    $q->where('receiver_id', Auth::id())
+                      ->orWhere('sender_id', Auth::id());
+                })
+                ->update(['folder' => 'trash']);
+        } elseif ($action === 'delete') {
+            // Supprimer définitivement uniquement les messages de la corbeille
+            Message::whereIn('id', $messageIds)
+                ->where('folder', 'trash')
+                ->where(function($q) {
+                    $q->where('receiver_id', Auth::id())
+                      ->orWhere('sender_id', Auth::id());
+                })
+                ->delete();
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Action effectuée avec succès.']);
+        }
+
+        return redirect()->back()->with('success', 'Action effectuée avec succès.');
     }
 }

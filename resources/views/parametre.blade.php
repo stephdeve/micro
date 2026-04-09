@@ -1,8 +1,8 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <style>
-    /* Styles supplémentaires pour la page Paramètres (cohérent avec login) */
+    /* Styles supplémentaires pour la page Paramètres */
     .main-content {
         position: relative;
         padding: 1.5rem;
@@ -29,21 +29,6 @@
         50% { transform: translateY(-30px); }
     }
 
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-    }
-
-    .header h1 {
-        font-size: 2.2rem;
-        background: linear-gradient(90deg, #ffffff, #81d4fa);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-    }
-
     .btn-primary {
         background: linear-gradient(145deg, #0077e6, #00bfff);
         border: none;
@@ -53,7 +38,7 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.25s;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 0.6rem;
     }
@@ -63,97 +48,8 @@
         box-shadow: 0 12px 24px rgba(0, 191, 255, 0.4);
     }
 
-    .btn-icon {
-        width: 44px;
-        height: 44px;
-        background: rgba(10, 20, 40, 0.6);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        border: 1px solid rgba(100, 180, 255, 0.3);
-        transition: all 0.25s;
-    }
-
-    .btn-icon:hover {
-        background: rgba(0, 40, 60, 0.8);
-        border-color: #00e5ff;
-    }
-
-    .profile-dropdown {
-        position: relative;
-    }
-
-    .avatar-btn {
-        width: 44px;
-        height: 44px;
-        background: linear-gradient(145deg, #4fc3ff, #bb86fc);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        cursor: pointer;
-        box-shadow: 0 0 15px rgba(79, 195, 255, 0.4);
-    }
-
-    .dropdown-menu {
-        position: absolute;
-        right: 0;
-        top: 60px;
-        background: rgba(10, 20, 40, 0.85);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(100, 180, 255, 0.3);
-        border-radius: 1rem;
-        min-width: 220px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-        display: none;
-        z-index: 100;
-    }
-
-    .profile-dropdown:hover .dropdown-menu {
-        display: block;
-    }
-
-    .dropdown-item {
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-        padding: 0.9rem 1.2rem;
-        color: #a0bcdd;
-        text-decoration: none;
-    }
-
-    .dropdown-item:hover {
-        background: rgba(0, 230, 255, 0.15);
-        color: white;
-    }
-
-    .dropdown-divider {
-        height: 1px;
-        background: rgba(255,255,255,0.08);
-        margin: 0.5rem 0;
-    }
-
-    .nav-item {
-        background: rgba(10, 20, 40, 0.6);
-        border: 1px solid rgba(100, 180, 255, 0.25);
-        color: #a0bcdd;
-        padding: 0.7rem 1.4rem;
-        border-radius: 2rem;
-        cursor: pointer;
-        transition: all 0.25s;
-    }
-
-    .nav-item.active, .nav-item:hover {
-        background: rgba(0, 40, 60, 0.8);
-        border-color: #00e5ff;
-        color: white;
-    }
-
     .card {
-        background: rgba(10, 20, 40, 0.65);
+        background: rgba(10, 20, 40, 0.75);
         backdrop-filter: blur(16px);
         border: 1px solid rgba(100, 180, 255, 0.25);
         border-radius: 1.8rem;
@@ -177,17 +73,110 @@
         outline: none;
     }
 
-    hr {
-        border: none;
-        border-top: 1px solid rgba(38, 63, 85, 0.6);
-        margin: 1.8rem 0;
+    .page-intro {
+        margin-bottom: 2rem;
+        padding: 2rem;
+        border-radius: 2rem;
+        background: linear-gradient(135deg, rgba(5, 30, 60, 0.95), rgba(6, 41, 75, 0.95));
+        border: 1px solid rgba(80, 160, 255, 0.18);
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-intro::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top left, rgba(79, 195, 255, 0.22), transparent 26%), radial-gradient(circle at bottom right, rgba(0, 191, 255, 0.16), transparent 22%);
+        pointer-events: none;
+    }
+
+    .page-intro > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .section-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.65rem 1rem;
+        border-radius: 999px;
+        background: rgba(0, 89, 182, 0.22);
+        color: #cbe6ff;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(79, 195, 255, 0.25);
+    }
+
+    .page-intro h1 {
+        font-size: 2.8rem;
+        margin-bottom: 0.75rem;
+        line-height: 1.05;
+        color: white;
+    }
+
+    .page-intro p {
+        color: #c5d8f4;
+        max-width: 720px;
+        margin-bottom: 0;
+    }
+
+    .intro-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .hero-btn {
+        min-width: 240px;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: 1.8fr 1fr;
+        gap: 1.8rem;
+    }
+
+    .field-group {
+        margin-bottom: 1.6rem;
+    }
+
+    .field-group label {
+        display: block;
+        margin-bottom: 0.6rem;
+        color: #9bb7d8;
+        font-weight: 500;
+    }
+
+    .form-actions {
+        text-align: right;
+    }
+
+    .info-header {
+        margin-bottom: 1.8rem;
+    }
+
+    .info-header h3 {
+        margin-bottom: 0.6rem;
+        color: #81d4fa;
+    }
+
+    .info-header span {
+        color: #9bb7d8;
+        font-size: 0.95rem;
     }
 
     .info-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.8rem 0;
+        padding: 0.9rem 0;
         border-bottom: 1px solid rgba(50, 100, 150, 0.3);
     }
 
@@ -197,7 +186,7 @@
 
     .info-label {
         color: #7a95b8;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         font-weight: 500;
     }
 
@@ -205,16 +194,36 @@
         font-weight: 600;
         color: #e0f2ff;
         text-align: right;
-        flex-grow: 1;
         padding-left: 1rem;
     }
 
-    .tab-content {
-        display: none;
+    @media (max-width: 992px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-intro {
+            padding: 1.6rem;
+        }
+
+        .page-intro h1 {
+            font-size: 2.1rem;
+        }
     }
 
-    .tab-content.active {
-        display: block;
+    @media (max-width: 640px) {
+        .page-intro, .card {
+            padding: 1.4rem;
+        }
+
+        .intro-content {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .hero-btn {
+            width: 100%;
+        }
     }
 </style>
 
@@ -228,407 +237,157 @@
         <i class="fas fa-server"></i>
     </div>
 
-    @include('layouts.guest')
-
-    <!-- Notifications de succès/erreur -->
-    <div id="notification" style="display: none; padding: 1rem; margin-bottom: 1.5rem; border-radius: 1rem; border-left: 4px solid; font-weight: 600;">
-        <i id="notifIcon" class="fas"></i> <span id="notifText"></span>
-    </div>
-
-    <!-- Onglets -->
-    <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 2.2rem; border-bottom: 1px solid #1d3347; padding-bottom: 1.2rem;">
-        <button class="nav-item active" data-tab="general">Général</button>
-        <button class="nav-item" data-tab="reseau">Réseau</button>
-        <button class="nav-item" data-tab="securite">Sécurité</button>
-        <button class="nav-item" data-tab="notifications">Notifications</button>
-        <button class="nav-item" data-tab="sauvegarde">Sauvegarde</button>
-        <button class="nav-item" data-tab="api">API</button>
-    </div>
-
-    <!-- Contenu des onglets -->
-    <div id="general-tab" class="tab-content active">
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.8rem;">
-            <!-- Colonne principale - Configuration générale -->
-            <div class="card">
-                <h3 style="margin-bottom: 1.8rem; color: #81d4fa;">Configuration générale</h3>
-
-                <form id="general-form">
-                    <div style="margin-bottom: 1.6rem;">
-                        <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Nom du système</label>
-                        <input type="text" name="nom_systeme" class="input-field" value="{{ $parametres['nom_systeme'] ?? 'NetAdmin - MikroTik Controller' }}" placeholder="Nom visible dans l'interface">
-                    </div>
-
-                    <div style="margin-bottom: 1.6rem;">
-                        <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Fuseau horaire</label>
-                        <select name="fuseau_horaire" class="input-field">
-                            <option value="Europe/Paris" {{ ($parametres['fuseau_horaire'] ?? 'Europe/Paris') == 'Europe/Paris' ? 'selected' : '' }}>Europe/Paris (UTC+1)</option>
-                            <option value="UTC" {{ ($parametres['fuseau_horaire'] ?? '') == 'UTC' ? 'selected' : '' }}>UTC</option>
-                            <option value="America/New_York" {{ ($parametres['fuseau_horaire'] ?? '') == 'America/New_York' ? 'selected' : '' }}>America/New_York (UTC-5/-4)</option>
-                            <option value="Africa/Porto-Novo" {{ ($parametres['fuseau_horaire'] ?? '') == 'Africa/Porto-Novo' ? 'selected' : '' }}>Africa/Porto-Novo (UTC+1)</option>
-                            <option value="Asia/Tokyo" {{ ($parametres['fuseau_horaire'] ?? '') == 'Asia/Tokyo' ? 'selected' : '' }}>Asia/Tokyo</option>
-                        </select>
-                    </div>
-
-                    <div style="margin-bottom: 1.6rem;">
-                        <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Langue de l'interface</label>
-                        <select name="langue" class="input-field">
-                            <option value="fr" {{ ($parametres['langue'] ?? 'fr') == 'fr' ? 'selected' : '' }}>Français</option>
-                            <option value="en" {{ ($parametres['langue'] ?? '') == 'en' ? 'selected' : '' }}>English</option>
-                            <option value="es" {{ ($parametres['langue'] ?? '') == 'es' ? 'selected' : '' }}>Español</option>
-                        </select>
-                    </div>
-
-                    <div style="margin-bottom: 1.6rem;">
-                        <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Intervalle de rafraîchissement des stats</label>
-                        <select name="intervalle_refresh" class="input-field">
-                            <option value="30" {{ ($parametres['intervalle_refresh'] ?? '60') == '30' ? 'selected' : '' }}>30 secondes</option>
-                            <option value="60" {{ ($parametres['intervalle_refresh'] ?? '60') == '60' ? 'selected' : '' }}>1 minute</option>
-                            <option value="120" {{ ($parametres['intervalle_refresh'] ?? '') == '120' ? 'selected' : '' }}>2 minutes</option>
-                            <option value="300" {{ ($parametres['intervalle_refresh'] ?? '') == '300' ? 'selected' : '' }}>5 minutes</option>
-                        </select>
-                    </div>
-
-                    <div style="text-align: right; margin-top: 2rem;">
-                        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Enregistrer les modifications</button>
-                    </div>
-                </form>
+    <div class="page-intro">
+        <span class="section-label"><i class="fas fa-cog"></i> PARAMÈTRES</span>
+        <div class="intro-content">
+            <div>
+                <h1>Réglages du système</h1>
+                <p>Interface claire pour ajuster les réglages principaux du service et accéder rapidement à la sauvegarde.</p>
             </div>
-
-            <!-- Colonne latérale -->
-            <div class="card">
-                <h3 style="margin-bottom: 1.5rem; color: #81d4fa;">Informations système</h3>
-
-                <div class="info-item">
-                    <div class="info-label">Version</div>
-                    <div class="info-value">{{ $parametres['version'] ?? '2.1.5' }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Dernière mise à jour</div>
-                    <div class="info-value">{{ $parametres['derniere_maj'] ?? '2024-01-15 14:32' }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Licence</div>
-                    <div class="info-value">{{ $parametres['licence'] ?? 'Entreprise - Valide jusqu\'au 2025-12-31' }}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Uptime</div>
-                    <div class="info-value">{{ $parametres['uptime'] ?? '12 jours 7h 42m' }}</div>
-                </div>
-
-                <hr>
-
-                <h4 style="margin: 1.5rem 0 1rem; color: #a0bcdd;">Sauvegarde & Mise à jour</h4>
-                <div style="margin-bottom: 1.2rem;">
-                    <button class="btn-primary" style="width: 100%;" onclick="downloadBackup()"><i class="fas fa-download"></i> Télécharger la sauvegarde</button>
-                </div>
-                <div style="margin-bottom: 1.2rem;">
-                    <button class="btn-primary" style="width: 100%; background: linear-gradient(145deg, #9333ea, #c084fc);" onclick="restoreBackup()"><i class="fas fa-upload"></i> Restaurer une sauvegarde</button>
-                </div>
-                <div style="margin-bottom: 1.2rem;">
-                    <button class="btn-primary" style="width: 100%;" onclick="checkUpdates()"><i class="fas fa-sync-alt"></i> Vérifier les mises à jour</button>
-                </div>
-            </div>
+            <button class="btn-primary hero-btn" onclick="downloadBackup()"><i class="fas fa-download"></i> Télécharger une sauvegarde</button>
         </div>
     </div>
 
-    <div id="reseau-tab" class="tab-content">
+    <div class="settings-grid">
         <div class="card">
-            <h3 style="margin-bottom: 1.8rem; color: #81d4fa;">Configuration Réseau</h3>
-            <p>Paramètres WAN, LAN, VLAN, DHCP, DNS, NAT...</p>
-            <form id="reseau-form">
-                <div style="margin-bottom: 1.6rem;">
-                    <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Adresse IP principale</label>
-                    <input type="text" name="ip_principale" class="input-field" value="{{ $parametres['ip_principale'] ?? '192.168.1.1' }}">
-                </div>
-                <div style="margin-bottom: 1.6rem;">
-                    <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Masque de sous-réseau</label>
-                    <input type="text" name="masque_reseau" class="input-field" value="{{ $parametres['masque_reseau'] ?? '255.255.255.0' }}">
-                </div>
-                <div style="margin-bottom: 1.6rem;">
-                    <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Passerelle par défaut</label>
-                    <input type="text" name="passerelle" class="input-field" value="{{ $parametres['passerelle'] ?? '192.168.1.254' }}">
-                </div>
-                <div style="text-align: right; margin-top: 2rem;">
-                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
-                </div>
-            </form>
-        </div>
-    </div>
+            <h3 style="margin-bottom: 0.8rem; color: #81d4fa;">Réglages généraux</h3>
+            <p style="margin-bottom: 1.8rem; color: #9bb7d8;">Configurez les paramètres principaux de votre application.</p>
 
-    <div id="securite-tab" class="tab-content">
-        <div class="card">
-            <h3 style="margin-bottom: 1.8rem; color: #81d4fa;">Configuration Sécurité</h3>
-            <p>Paramètres de sécurité, firewall, authentification...</p>
-            <form id="securite-form">
-                <div style="margin-bottom: 1.6rem;">
-                    <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Niveau de sécurité</label>
-                    <select name="niveau_securite" class="input-field">
-                        <option value="faible" {{ ($parametres['niveau_securite'] ?? 'moyen') == 'faible' ? 'selected' : '' }}>Faible</option>
-                        <option value="moyen" {{ ($parametres['niveau_securite'] ?? 'moyen') == 'moyen' ? 'selected' : '' }}>Moyen</option>
-                        <option value="eleve" {{ ($parametres['niveau_securite'] ?? '') == 'eleve' ? 'selected' : '' }}>Élevé</option>
+            <form id="general-form">
+                <div class="field-group">
+                    <label>Nom du service</label>
+                    <input type="text" name="nom_systeme" class="input-field" value="{{ $parametres['nom_systeme'] ?? 'NetAdmin' }}" placeholder="Nom du service">
+                </div>
+
+                <div class="field-group">
+                    <label>Langue par défaut</label>
+                    <select name="langue" class="input-field">
+                        <option value="fr" {{ ($parametres['langue'] ?? 'fr') == 'fr' ? 'selected' : '' }}>Français</option>
+                        <option value="en" {{ ($parametres['langue'] ?? '') == 'en' ? 'selected' : '' }}>English</option>
+                        <option value="es" {{ ($parametres['langue'] ?? '') == 'es' ? 'selected' : '' }}>Español</option>
                     </select>
                 </div>
-                <div style="margin-bottom: 1.6rem;">
-                    <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Timeout de session (minutes)</label>
-                    <input type="number" name="timeout_session" class="input-field" value="{{ $parametres['timeout_session'] ?? '30' }}">
-                </div>
-                <div style="text-align: right; margin-top: 2rem;">
-                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <div id="notifications-tab" class="tab-content">
-        <div class="card">
-            <h3 style="margin-bottom: 1.8rem; color: #81d4fa;">Configuration Notifications</h3>
-            <p>Paramètres d'alertes et notifications...</p>
-            <form id="notifications-form">
-                <div style="margin-bottom: 1.6rem;">
-                    <label class="remember" style="display: block;">
-                        <input type="checkbox" name="notif_email" {{ ($parametres['notif_email'] ?? true) ? 'checked' : '' }}> Notifications par email
-                    </label>
-                </div>
-                <div style="margin-bottom: 1.6rem;">
-                    <label class="remember" style="display: block;">
-                        <input type="checkbox" name="notif_sms" {{ ($parametres['notif_sms'] ?? false) ? 'checked' : '' }}> Notifications par SMS
-                    </label>
-                </div>
-                <div style="text-align: right; margin-top: 2rem;">
-                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="sauvegarde-tab" class="tab-content">
-        <div class="card">
-            <h3 style="margin-bottom: 1.8rem; color: #81d4fa;">Configuration Sauvegarde</h3>
-            <p>Paramètres de sauvegarde automatique...</p>
-            <form id="sauvegarde-form">
-                <div style="margin-bottom: 1.6rem;">
-                    <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Fréquence de sauvegarde</label>
-                    <select name="frequence_sauvegarde" class="input-field">
-                        <option value="quotidienne" {{ ($parametres['frequence_sauvegarde'] ?? 'hebdomadaire') == 'quotidienne' ? 'selected' : '' }}>Quotidienne</option>
-                        <option value="hebdomadaire" {{ ($parametres['frequence_sauvegarde'] ?? 'hebdomadaire') == 'hebdomadaire' ? 'selected' : '' }}>Hebdomadaire</option>
-                        <option value="mensuelle" {{ ($parametres['frequence_sauvegarde'] ?? '') == 'mensuelle' ? 'selected' : '' }}>Mensuelle</option>
+                <div class="field-group">
+                    <label>Mode maintenance</label>
+                    <select name="maintenance_mode" class="input-field">
+                        <option value="off" {{ ($parametres['maintenance_mode'] ?? 'off') == 'off' ? 'selected' : '' }}>Désactivé</option>
+                        <option value="on" {{ ($parametres['maintenance_mode'] ?? '') == 'on' ? 'selected' : '' }}>Activé</option>
                     </select>
                 </div>
-                <div style="text-align: right; margin-top: 2rem;">
-                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+
+                <div class="field-group">
+                    <label>Fuseau horaire</label>
+                    <select name="fuseau_horaire" class="input-field">
+                        <option value="Europe/Paris" {{ ($parametres['fuseau_horaire'] ?? 'Europe/Paris') == 'Europe/Paris' ? 'selected' : '' }}>Europe/Paris (UTC+1)</option>
+                        <option value="UTC" {{ ($parametres['fuseau_horaire'] ?? '') == 'UTC' ? 'selected' : '' }}>UTC</option>
+                        <option value="America/New_York" {{ ($parametres['fuseau_horaire'] ?? '') == 'America/New_York' ? 'selected' : '' }}>America/New_York (UTC-5/-4)</option>
+                        <option value="Africa/Porto-Novo" {{ ($parametres['fuseau_horaire'] ?? '') == 'Africa/Porto-Novo' ? 'selected' : '' }}>Africa/Porto-Novo (UTC+1)</option>
+                        <option value="Asia/Tokyo" {{ ($parametres['fuseau_horaire'] ?? '') == 'Asia/Tokyo' ? 'selected' : '' }}>Asia/Tokyo</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Enregistrer les paramètres</button>
                 </div>
             </form>
         </div>
-    </div>
 
-    <div id="api-tab" class="tab-content">
         <div class="card">
-            <h3 style="margin-bottom: 1.8rem; color: #81d4fa;">Configuration API</h3>
-            <p>Paramètres d'accès API...</p>
-            <form id="api-form">
-                <div style="margin-bottom: 1.6rem;">
-                    <label class="remember" style="display: block;">
-                        <input type="checkbox" name="api_active" {{ ($parametres['api_active'] ?? true) ? 'checked' : '' }}> Activer l'API
-                    </label>
-                </div>
-                <div style="margin-bottom: 1.6rem;">
-                    <label style="display: block; margin-bottom: 0.6rem; color: #8ba9d0;">Clé API</label>
-                    <input type="text" name="api_key" class="input-field" value="{{ $parametres['api_key'] ?? '' }}" readonly>
-                    <button type="button" class="btn-primary" style="margin-top: 0.5rem;" onclick="regenerateApiKey()">Régénérer</button>
-                </div>
-                <div style="text-align: right; margin-top: 2rem;">
-                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
-                </div>
-            </form>
+            <div class="info-header">
+                <h3>Informations</h3>
+                <span>État actuel du système et informations utiles.</span>
+            </div>
+
+            <div class="info-item">
+                <div class="info-label">Version actuelle :</div>
+                <div class="info-value">{{ $parametres['version'] ?? '1.0.0' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Environnement :</div>
+                <div class="info-value">{{ $parametres['environment'] ?? config('app.env') ?? 'local' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Fuseau horaire :</div>
+                <div class="info-value">{{ $parametres['fuseau_horaire'] ?? config('app.timezone') ?? 'UTC' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Dernière mise à jour :</div>
+                <div class="info-value">{{ $parametres['derniere_maj'] ?? '—' }}</div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
     function showNotification(message, isSuccess = true) {
-        const notif = document.getElementById('notification');
-        const icon = document.getElementById('notifIcon');
-        const text = document.getElementById('notifText');
-        
+        let notif = document.getElementById('notification');
+        if (!notif) {
+            notif = document.createElement('div');
+            notif.id = 'notification';
+            notif.style.position = 'fixed';
+            notif.style.top = '1rem';
+            notif.style.right = '1rem';
+            notif.style.padding = '1rem 1.2rem';
+            notif.style.borderRadius = '1rem';
+            notif.style.fontWeight = '600';
+            notif.style.zIndex = 9999;
+            document.body.appendChild(notif);
+        }
+
         notif.style.display = 'block';
+        notif.style.borderLeft = '4px solid';
         notif.style.borderLeftColor = isSuccess ? '#2ef75b' : '#ff5e7c';
-        notif.style.background = isSuccess ? 'rgba(46, 247, 91, 0.1)' : 'rgba(255, 94, 124, 0.1)';
+        notif.style.background = isSuccess ? 'rgba(46, 247, 91, 0.12)' : 'rgba(255, 94, 124, 0.12)';
         notif.style.color = isSuccess ? '#2ef75b' : '#ff5e7c';
-        
-        icon.className = isSuccess ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
-        text.textContent = message;
-        
-        setTimeout(() => {
+        notif.textContent = message;
+
+        clearTimeout(window.paramNotificationTimeout);
+        window.paramNotificationTimeout = setTimeout(() => {
             notif.style.display = 'none';
         }, 4000);
     }
 
-    // Gestion des onglets
-    document.querySelectorAll('.nav-item').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            const tabId = btn.getAttribute('data-tab') + '-tab';
-            document.getElementById(tabId).classList.add('active');
-        });
-    });
-
-    // Gestion des formulaires avec AJAX
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const btn = this.querySelector('button[type="submit"]');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
-            
-            const formData = new FormData(this);
-            const data = {};
-            for (let [key, value] of formData.entries()) {
-                data[key] = value;
-            }
-            
-            fetch('{{ route("parametres.updateAll") }}', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                
-                if (result.success) {
-                    showNotification('✅ Paramètres enregistrés avec succès !', true);
-                } else {
-                    showNotification('❌ ' + (result.message || 'Erreur lors de l\'enregistrement'), false);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                showNotification('❌ Erreur de connexion', false);
-            });
-        });
-    });
-
-    // Boutons de sauvegarde
-    function downloadBackup() {
-        if (confirm('Télécharger une sauvegarde du système ?')) {
-            window.location.href = '{{ route("parametres.backup.download") }}';
-        }
-    }
-
-    function restoreBackup() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.zip,.tar,.sql';
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const formData = new FormData();
-                formData.append('backup', file);
-                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-                
-                fetch('{{ route("parametres.backup.restore") }}', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        showNotification('✅ Sauvegarde restaurée ! Rechargement en cours...', true);
-                        setTimeout(() => location.reload(), 2000);
-                    } else {
-                        showNotification('❌ ' + (result.message || 'Erreur lors de la restauration'), false);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    showNotification('❌ Erreur lors du chargement du fichier', false);
-                });
-            }
-        };
-        input.click();
-    }
-
-    function checkUpdates() {
-        const btn = event.target.closest('button');
+    document.getElementById('general-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = this.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Vérification...';
-        
-        fetch('{{ route("parametres.check-updates") }}', {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => data[key] = value);
+
+        fetch('{{ route("parametres.updateAll") }}', {
+            method: 'PUT',
             headers: {
+                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
+            },
+            body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(result => {
             btn.disabled = false;
             btn.innerHTML = originalText;
-            
             if (result.success) {
-                if (result.updates_available) {
-                    showNotification(`✅ ${result.message} (v${result.latest_version})`, true);
-                } else {
-                    showNotification('✅ Système à jour !', true);
-                }
+                showNotification('✅ Paramètres enregistrés avec succès !', true);
             } else {
-                showNotification('❌ ' + (result.message || 'Erreur lors de la vérification'), false);
+                showNotification('❌ ' + (result.message || 'Erreur lors de l\'enregistrement'), false);
             }
         })
-        .catch(error => {
-            console.error('Erreur:', error);
+        .catch(() => {
             btn.disabled = false;
             btn.innerHTML = originalText;
             showNotification('❌ Erreur de connexion', false);
         });
-    }
+    });
 
-    function regenerateApiKey() {
-        if (confirm('Êtes-vous sûr ? Cela invalidera l\'ancienne clé API.')) {
-            const btn = event.target.closest('button');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
-            
-            fetch('{{ route("parametres.updateAll") }}', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({ regenerate_api_key: true })
-            })
-            .then(response => response.json())
-            .then(result => {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                
-                if (result.success && result.api_key) {
-                    document.querySelector('input[name="api_key"]').value = result.api_key;
-                    showNotification('✅ Clé API régénérée avec succès !', true);
-                } else {
-                    showNotification('❌ Erreur lors de la régénération', false);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                showNotification('❌ Erreur de connexion', false);
-            });
+    function downloadBackup() {
+        if (confirm('Télécharger une sauvegarde du système ?')) {
+            window.location.href = '{{ route("parametres.backup.download") }}';
         }
     }
 </script>
+@endsection
