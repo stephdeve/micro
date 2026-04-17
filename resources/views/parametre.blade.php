@@ -238,81 +238,58 @@
     </div>
 
     <div class="page-intro">
-        <span class="section-label"><i class="fas fa-cog"></i> PARAMÈTRES</span>
+        <span class="section-label"><i class="fas fa-cog"></i> {{ __('Settings') }}</span>
         <div class="intro-content">
             <div>
-                <h1>Réglages du système</h1>
-                <p>Interface claire pour ajuster les réglages principaux du service et accéder rapidement à la sauvegarde.</p>
+                <h1>{{ __('System settings') }}</h1>
+                <p>{{ __('Clear interface to adjust your main application settings and access backups quickly.') }}</p>
             </div>
-            <button class="btn-primary hero-btn" onclick="downloadBackup()"><i class="fas fa-download"></i> Télécharger une sauvegarde</button>
+            <button class="btn-primary hero-btn" onclick="downloadBackup()"><i class="fas fa-download"></i> {{ __('Download backup') }}</button>
         </div>
     </div>
 
     <div class="settings-grid">
         <div class="card">
-            <h3 style="margin-bottom: 0.8rem; color: #81d4fa;">Réglages généraux</h3>
-            <p style="margin-bottom: 1.8rem; color: #9bb7d8;">Configurez les paramètres principaux de votre application.</p>
+            <h3 style="margin-bottom: 0.8rem; color: #81d4fa;">{{ __('General settings') }}</h3>
+            <p style="margin-bottom: 1.8rem; color: #9bb7d8;">{{ __('Configure your main application settings.') }}</p>
 
             <form id="general-form">
                 <div class="field-group">
-                    <label>Nom du service</label>
-                    <input type="text" name="nom_systeme" class="input-field" value="{{ $parametres['nom_systeme'] ?? 'NetAdmin' }}" placeholder="Nom du service">
+                    <label>{{ __('Service name') }}</label>
+                    <input type="text" name="nom_systeme" class="input-field" value="{{ $parametres['nom_systeme'] ?? 'NetAdmin' }}" placeholder="{{ __('Service name') }}">
                 </div>
 
                 <div class="field-group">
-                    <label>Langue par défaut</label>
+                    <label>{{ __('Default language') }}</label>
                     <select name="langue" class="input-field">
-                        <option value="fr" {{ ($parametres['langue'] ?? 'fr') == 'fr' ? 'selected' : '' }}>Français</option>
-                        <option value="en" {{ ($parametres['langue'] ?? '') == 'en' ? 'selected' : '' }}>English</option>
-                        <option value="es" {{ ($parametres['langue'] ?? '') == 'es' ? 'selected' : '' }}>Español</option>
-                    </select>
-                </div>
-
-                <div class="field-group">
-                    <label>Mode maintenance</label>
-                    <select name="maintenance_mode" class="input-field">
-                        <option value="off" {{ ($parametres['maintenance_mode'] ?? 'off') == 'off' ? 'selected' : '' }}>Désactivé</option>
-                        <option value="on" {{ ($parametres['maintenance_mode'] ?? '') == 'on' ? 'selected' : '' }}>Activé</option>
-                    </select>
-                </div>
-
-                <div class="field-group">
-                    <label>Fuseau horaire</label>
-                    <select name="fuseau_horaire" class="input-field">
-                        <option value="Europe/Paris" {{ ($parametres['fuseau_horaire'] ?? 'Europe/Paris') == 'Europe/Paris' ? 'selected' : '' }}>Europe/Paris (UTC+1)</option>
-                        <option value="UTC" {{ ($parametres['fuseau_horaire'] ?? '') == 'UTC' ? 'selected' : '' }}>UTC</option>
-                        <option value="America/New_York" {{ ($parametres['fuseau_horaire'] ?? '') == 'America/New_York' ? 'selected' : '' }}>America/New_York (UTC-5/-4)</option>
-                        <option value="Africa/Porto-Novo" {{ ($parametres['fuseau_horaire'] ?? '') == 'Africa/Porto-Novo' ? 'selected' : '' }}>Africa/Porto-Novo (UTC+1)</option>
-                        <option value="Asia/Tokyo" {{ ($parametres['fuseau_horaire'] ?? '') == 'Asia/Tokyo' ? 'selected' : '' }}>Asia/Tokyo</option>
+                        <option value="fr" {{ ($parametres['langue'] ?? 'fr') == 'fr' ? 'selected' : '' }}>{{ __('French') }}</option>
+                        <option value="en" {{ ($parametres['langue'] ?? '') == 'en' ? 'selected' : '' }}>{{ __('English') }}</option>
+                        <option value="es" {{ ($parametres['langue'] ?? '') == 'es' ? 'selected' : '' }}>{{ __('Spanish') }}</option>
                     </select>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Enregistrer les paramètres</button>
+                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> {{ __('Save settings') }}</button>
                 </div>
             </form>
         </div>
 
         <div class="card">
             <div class="info-header">
-                <h3>Informations</h3>
-                <span>État actuel du système et informations utiles.</span>
+                <h3>{{ __('Information') }}</h3>
+                <span>{{ __('Current system status and useful information.') }}</span>
             </div>
 
             <div class="info-item">
-                <div class="info-label">Version actuelle :</div>
+                <div class="info-label">{{ __('Current version') }} :</div>
                 <div class="info-value">{{ $parametres['version'] ?? '1.0.0' }}</div>
             </div>
             <div class="info-item">
-                <div class="info-label">Environnement :</div>
+                <div class="info-label">{{ __('Environment') }} :</div>
                 <div class="info-value">{{ $parametres['environment'] ?? config('app.env') ?? 'local' }}</div>
             </div>
             <div class="info-item">
-                <div class="info-label">Fuseau horaire :</div>
-                <div class="info-value">{{ $parametres['fuseau_horaire'] ?? config('app.timezone') ?? 'UTC' }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Dernière mise à jour :</div>
+                <div class="info-label">{{ __('Last updated') }} :</div>
                 <div class="info-value">{{ $parametres['derniere_maj'] ?? '—' }}</div>
             </div>
         </div>
@@ -372,9 +349,12 @@
             btn.disabled = false;
             btn.innerHTML = originalText;
             if (result.success) {
-                showNotification('✅ Paramètres enregistrés avec succès !', true);
+                showNotification('✅ {{ __('Settings saved successfully!') }}', true);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 700);
             } else {
-                showNotification('❌ ' + (result.message || 'Erreur lors de l\'enregistrement'), false);
+                showNotification('❌ ' + (result.message || '{{ __('Error saving settings') }}'), false);
             }
         })
         .catch(() => {

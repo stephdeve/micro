@@ -15,6 +15,23 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        $user = Auth::user();
+
+        // Rediriger vers le dashboard spécifique au rôle
+        if ($user->isSuperAdmin()) {
+            return redirect()->route('super-admin.dashboard');
+        }
+        if ($user->isAdminReseau()) {
+            return redirect()->route('admin-reseau.dashboard');
+        }
+        if ($user->isAdminService()) {
+            return redirect()->route('admin-service.dashboard');
+        }
+        if ($user->isEmploye()) {
+            return redirect()->route('employe.dashboard');
+        }
+
+        // Fallback : dashboard générique
         // Récupérer les données pour le dashboard
         $routeursActifs = Routeur::where('statut', 'en_ligne')->count();
         $clientsWiFi = InterfaceModel::where('type', 'wireless')->sum('clients_connectes');

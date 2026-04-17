@@ -11,6 +11,7 @@ class InterfaceModel extends Model
 
     protected $fillable = [
         'routeur_id',
+        'mikrotik_id',
         'nom',
         'type',
         'adresse_mac',

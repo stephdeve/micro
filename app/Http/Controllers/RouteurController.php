@@ -6,6 +6,9 @@ use App\Models\Routeur;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\MikrotikService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class RouteurController extends Controller
 {
@@ -134,18 +137,129 @@ class RouteurController extends Controller
         ]);
     }
 
+    private function buildFilteredRouteurs(Request $request)
+    {
+        $query = Routeur::query();
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('nom', 'like', '%' . $request->search . '%')
+                  ->orWhere('adresse_ip', 'like', '%' . $request->search . '%')
+                  ->orWhere('modele', 'like', '%' . $request->search . '%')
+                  ->orWhere('numero_serie', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        if ($request->filled('modele')) {
+            $query->where('modele', $request->modele);
+        }
+
+        return $query->with('responsable')->latest();
+    }
+
+    public function export(Request $request)
+    {
+        $format = strtolower($request->get('format', 'xlsx'));
+        $routeurs = $this->buildFilteredRouteurs($request)->get();
+
+        return match ($format) {
+            'pdf' => $this->exportPdf($routeurs),
+            'xlsx' => $this->exportExcel($routeurs),
+            default => $this->exportExcel($routeurs),
+        };
+    }
+
+    private function exportPdf($routeurs)
+    {
+        $filename = 'routeurs_' . now()->format('Ymd_His') . '.pdf';
+        $pdf = Pdf::loadView('routeurs.export-pdf', compact('routeurs'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download($filename);
+    }
+
+    private function exportExcel($routeurs)
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Routeurs');
+
+        $headers = ['Nom', 'Modèle', 'Adresse IP', 'Version ROS', 'Statut', 'Uptime'];
+        $sheet->fromArray($headers, null, 'A1');
+
+        $row = 2;
+        foreach ($routeurs as $routeur) {
+            $sheet->setCellValue('A' . $row, $routeur->nom);
+            $sheet->setCellValue('B' . $row, $routeur->modele ?? 'N/A');
+            $sheet->setCellValue('C' . $row, $routeur->adresse_ip);
+            $sheet->setCellValue('D' . $row, $routeur->version_ros ?? 'N/A');
+            $sheet->setCellValue('E' . $row, $routeur->statut == 'en_ligne' ? 'En ligne' : ($routeur->statut == 'maintenance' ? 'Maintenance' : 'Hors ligne'));
+            $sheet->setCellValue('F' . $row, $routeur->uptime ? floor($routeur->uptime / 86400) . ' jours' : 'N/A');
+            $row++;
+        }
+
+        foreach (range('A', 'F') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        $sheet->getStyle('A1:F1')->getFont()->setBold(true);
+
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'routeurs_' . now()->format('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            if (ob_get_length()) {
+                ob_end_clean();
+            }
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function print(Request $request)
+    {
+        $routeurs = $this->buildFilteredRouteurs($request)->get();
+
+        return view('routeurs.print', compact('routeurs'));
+    }
+
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
+        // If force checkbox is checked, delete existing routeur with same IP first
+        if ($request->has('force_create')) {
+            $existing = Routeur::withTrashed()->where('adresse_ip', $request->input('adresse_ip'))->first();
+            if ($existing) {
+                $existing->forceDelete();
+            }
+        }
+
         $data = $request->validate([
             'nom' => 'required|string|max:255',
-            'adresse_ip' => 'required|ip|unique:routeurs',
-            'api_user' => 'nullable|string|max:100',
-            'api_password' => 'nullable|string|max:100',
+            'adresse_ip' => 'required|ip|unique:routeurs,adresse_ip,NULL,id,deleted_at,NULL',
+            'api_user' => 'required|string|max:100',
+            'api_password' => 'required|string|max:100',
+            'modele' => 'nullable|string|max:100',
+            'adresse_mac' => 'nullable|string|max:17',
+            'version_ros' => 'nullable|string|max:50',
+            'firmware' => 'nullable|string|max:50',
+            'numero_serie' => 'nullable|string|max:50',
             'emplacement' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+        ], [
+            'adresse_ip.required' => 'L\'adresse IP est requise',
+            'adresse_ip.ip' => 'L\'adresse IP doit être au format valide (ex: 192.168.1.10)',
+            'adresse_ip.unique' => 'Cette adresse IP existe déjà. Cochez "Forcer la création" pour remplacer.',
+            'nom.required' => 'Le nom du routeur est requis',
+            'api_user.required' => 'L\'utilisateur API est requis',
+            'api_password.required' => 'Le mot de passe API est requis',
         ]);
 
         $data['statut'] = 'hors_ligne';
@@ -153,11 +267,11 @@ class RouteurController extends Controller
 
         $routeur = Routeur::create($data);
 
-        $handshakeOk = false;
+        $handshakeResult = ['success' => false];
         if (!empty($routeur->api_user) && !empty($routeur->api_password)) {
-            $service = app(MikrotikService::class);
-            $handshakeOk = $service->handshake($routeur);
+            $handshakeResult = $routeur->handshake();
         }
+        $handshakeOk = $handshakeResult['success'] ?? false;
 
         Auth::user()->notify(new \App\Notifications\GenericNotification(
             'Routeur ajouté',
@@ -166,7 +280,12 @@ class RouteurController extends Controller
         ));
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'routeur' => $routeur, 'handshake' => $handshakeOk]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Routeur ajouté avec succès!',
+                'routeur' => $routeur,
+                'handshake' => $handshakeOk
+            ]);
         }
 
         return redirect()->route('routeurs.index')->with('success', 'Routeur ajouté avec succès; handshake '.($handshakeOk ? 'reussi' : 'echoue').'.');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Parametre;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class ParametreController extends Controller
 {
@@ -46,6 +47,10 @@ class ParametreController extends Controller
         }
 
         // Notification pour mise à jour des paramètres
+        if (isset($data['langue'])) {
+            Session::put('locale', $data['langue']);
+        }
+
         auth()->user()->notify(new \App\Notifications\GenericNotification(
             'Paramètres mis à jour',
             'Vos paramètres système ont été modifiés.',

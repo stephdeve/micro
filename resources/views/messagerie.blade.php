@@ -147,7 +147,7 @@
                     <i class="fas fa-check-square"></i> Sélectionner tout
                 </button>
                 <span id="selectCounter" style="color: #8ba9d0; font-size: 0.9rem; display: none;">
-                    0 / <span id="totalMessages">{{ count($messages) }}</span>
+                    0 / <span id="totalMessages">{{ $messages->total() }}</span>
                 </span>
             </div>
 
@@ -203,24 +203,25 @@
             </div>
 
             <!-- Panneau d'actions batch -->
-            <div id="batchPanel" style="display: none; padding: 1rem; background: #1a3a5c; border-top: 1px solid #1d3347; border-bottom: 1px solid #1d3347;">
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%;">
-                    <div style="color: #8ba9d0;">
-                        <span id="selectedCount" class="selection-badge">0</span> message(s) sélectionné(s)
+            <div id="batchPanel" style="display: none; padding: 0.75rem 0.9rem; background: rgba(12, 24, 42, 0.98); border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08); border-radius: 1rem; margin-top: 1rem;">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%;">
+                    <div style="display: inline-flex; align-items: center; gap: 0.6rem; color: #d8e7ff; font-size: 0.95rem; font-weight: 500;">
+                        <span id="selectedCount" class="selection-badge" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: rgba(255,255,255,0.08); border-radius: 999px; font-weight: 700;">0</span>
+                        <span style="line-height: 1.2;">message(s) sélectionné(s)</span>
                     </div>
-                    <div style="display: flex; gap: 0.75rem;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-end;">
                         @php $isTrash = request('folder') === 'trash'; @endphp
                         @if(!$isTrash)
-                            <button onclick="batchAction('trash')" class="btn-icon" style="width: auto; padding: 0.5rem 1rem; background: #ff5e7c; border-radius: 0.5rem;">
-                                <i class="fas fa-trash"></i> Vers la corbeille
+                            <button onclick="batchAction('trash')" class="btn-icon" style="width: auto; padding: 0.55rem 0.9rem; background: #ff5e7c; border-radius: 999px; font-size: 0.92rem; white-space: nowrap;">
+                                <i class="fas fa-trash" style="margin-right: 0.4rem;"></i> Vers la corbeille
                             </button>
                         @else
-                            <button onclick="batchAction('delete')" class="btn-icon" style="width: auto; padding: 0.5rem 1rem; background: #8b0000; border-radius: 0.5rem;">
-                                <i class="fas fa-trash-alt"></i> Supprimer définitivement
+                            <button onclick="batchAction('delete')" class="btn-icon" style="width: auto; padding: 0.55rem 0.9rem; background: #8b0000; border-radius: 999px; font-size: 0.92rem; white-space: nowrap;">
+                                <i class="fas fa-trash-alt" style="margin-right: 0.35rem;"></i> Supprimer définitivement
                             </button>
                         @endif
-                        <button onclick="deselectAllMessages()" class="btn-icon" style="width: auto; padding: 0.5rem 1rem; background: #4f6682; border-radius: 0.5rem;">
-                            <i class="fas fa-times"></i> Désélectionner
+                        <button onclick="deselectAllMessages()" class="btn-icon" style="width: auto; padding: 0.55rem 0.9rem; background: #4f6682; border-radius: 999px; font-size: 0.92rem; white-space: nowrap;">
+                            <i class="fas fa-times" style="margin-right: 0.35rem;"></i> Désélectionner
                         </button>
                     </div>
                 </div>
@@ -685,19 +686,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 action: action
             })
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Erreur ${response.status}`);
+        .then(response => response.json().then(data => ({ ok: response.ok, status: response.status, data: data })))
+        .then(result => {
+            if (!result.ok) {
+                throw result.data || { message: `Erreur ${result.status}` };
             }
-            return response.json();
-        })
-        .then(data => {
-            console.log('✅ Action effectuée:', data);
+            console.log('✅ Action effectuée:', result.data);
+            if (result.data.message) {
+                alert(result.data.message);
+            }
             window.location.reload();
         })
         .catch(error => {
             console.error('❌ Erreur:', error);
-            alert('Erreur lors de l\'action: ' + error.message);
+            let errorMessage = 'Erreur lors de l\'action.';
+            
+            if (error && error.errors) {
+                const errors = Object.values(error.errors).flat().map(e => '• ' + e);
+                errorMessage = 'Erreurs de validation :\n' + errors.join('\n');
+            } else if (error && error.message) {
+                errorMessage = 'Erreur: ' + error.message;
+            }
+            
+            alert(errorMessage);
         });
     };
 

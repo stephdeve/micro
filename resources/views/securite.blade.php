@@ -1,502 +1,514 @@
 @extends('layouts.app')
 
+@section('title', 'Sécurité - Centre de Contrôle')
+
 @section('content')
-<div class="main-content">
-    <div class="dashboard-bg">
-        <i class="fas fa-wifi"></i><i class="fas fa-satellite"></i><i class="fas fa-broadcast-tower"></i><i class="fas fa-network-wired"></i>
+<div class="min-h-[calc(100vh-1.5rem)] bg-slate-900 text-white py-6 pl-20 pr-4">
+    
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                <i class="fas fa-shield-alt mr-3"></i>Centre de Sécurité
+            </h1>
+            <p class="text-slate-400 mt-1">Surveillance et protection du réseau</p>
+        </div>
+        <button id="refresh-securite" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition flex items-center gap-2">
+            <i class="fas fa-sync-alt"></i>
+            <span>Actualiser</span>
+        </button>
     </div>
 
-    @include('layouts.guest')
-
-    <!-- Statistiques sécurité -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-title"><i class="fas fa-shield-virus"></i> Niveau de sécurité</div>
-            <div class="stat-value" style="color: #2ef79b;">{{ $stats['niveau_securite'] ?? 90 }}%</div>
-            <div class="stat-change">{{ $stats['niveau_securite'] >= 80 ? 'Excellent' : ($stats['niveau_securite'] >= 50 ? 'Moyen' : 'Faible') }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title"><i class="fas fa-skull-crosswalk"></i> Tentatives bloquées</div>
-            <div class="stat-value">{{ $stats['tentatives_bloc'] ?? 0 }}</div>
-            <div class="stat-change">+{{ $stats['tentatives_bloc_today'] ?? 0 }} aujourd'hui</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title"><i class="fas fa-firewall"></i> Règles firewall</div>
-            <div class="stat-value">{{ $stats['regles_firewall'] ?? 0 }}</div>
-            <div class="stat-change">Actives</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title"><i class="fas fa-lock"></i> Connexions TLS</div>
-            <div class="stat-value">{{ $stats['connexions_tls'] ?? 0 }}</div>
-            <div class="stat-change">Chiffrées</div>
-        </div>
-    </div>
-
-    <!-- Alertes et incidents -->
-    <div class="router-section">
-        <div class="card">
-            <div class="card-header">
-                <h3><i class="fas fa-exclamation-triangle" style="color: #ffaa33;"></i> Alertes récentes</h3>
-                <span class="status-badge" id="badge-alertes">{{ $stats['alertes_non_resolues'] ?? 0 }} non résolues</span>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- Niveau de sécurité -->
+        <div class="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 rounded-2xl p-5 relative overflow-hidden group hover:border-emerald-500/40 transition">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-emerald-500/20 transition"></div>
+            <div class="relative">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-shield-virus text-emerald-400 text-xl"></i>
+                    </div>
+                    <span class="text-emerald-400 text-sm font-medium">Santé</span>
+                </div>
+                <div class="text-3xl font-bold text-white">{{ $stats['niveau_securite'] ?? 90 }}%</div>
+                <div class="text-emerald-400/70 text-sm mt-1">
+                    {{ ($stats['niveau_securite'] ?? 90) >= 80 ? 'Excellent' : (($stats['niveau_securite'] ?? 90) >= 50 ? 'Moyen' : 'Faible') }}
+                </div>
             </div>
-            <div id="alertes-list" style="display: flex; flex-direction: column; gap: 1rem;">
+        </div>
+
+        <!-- Tentatives bloquées -->
+        <div class="bg-gradient-to-br from-rose-500/10 to-rose-600/5 border border-rose-500/20 rounded-2xl p-5 relative overflow-hidden group hover:border-rose-500/40 transition">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-rose-500/20 transition"></div>
+            <div class="relative">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 bg-rose-500/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-ban text-rose-400 text-xl"></i>
+                    </div>
+                    <span class="text-rose-400 text-sm font-medium">Bloquées</span>
+                </div>
+                <div class="text-3xl font-bold text-white">{{ number_format($stats['tentatives_bloc'] ?? 0) }}</div>
+                <div class="text-rose-400/70 text-sm mt-1">+{{ $stats['tentatives_bloc_today'] ?? 0 }} aujourd'hui</div>
+            </div>
+        </div>
+
+        <!-- Règles firewall -->
+        <div class="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-2xl p-5 relative overflow-hidden group hover:border-amber-500/40 transition">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-amber-500/20 transition"></div>
+            <div class="relative">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-firewall text-amber-400 text-xl"></i>
+                    </div>
+                    <span class="text-amber-400 text-sm font-medium">Firewall</span>
+                </div>
+                <div class="text-3xl font-bold text-white">{{ number_format($stats['regles_firewall'] ?? 0) }}</div>
+                <div class="text-amber-400/70 text-sm mt-1">Règles actives</div>
+            </div>
+        </div>
+
+        <!-- Connexions TLS -->
+        <div class="bg-gradient-to-br from-cyan-500/10 to-blue-600/5 border border-cyan-500/20 rounded-2xl p-5 relative overflow-hidden group hover:border-cyan-500/40 transition">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-cyan-500/20 transition"></div>
+            <div class="relative">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-lock text-cyan-400 text-xl"></i>
+                    </div>
+                    <span class="text-cyan-400 text-sm font-medium">TLS</span>
+                </div>
+                <div class="text-3xl font-bold text-white">{{ number_format($stats['connexions_tls'] ?? 0) }}</div>
+                <div class="text-cyan-400/70 text-sm mt-1">Connexions chiffrées</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D Security Shield -->
+    <div class="mb-8 bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
+        <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+            <h3 class="font-semibold flex items-center gap-2">
+                <i class="fas fa-cube text-emerald-400"></i>
+                Bouclier de sécurité 3D
+            </h3>
+            <span class="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded-lg">Three.js</span>
+        </div>
+        <div id="security3D" class="h-64 w-full"></div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Alertes Section -->
+        <div class="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
+            <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 class="font-semibold flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle text-amber-400"></i>
+                    Alertes récentes
+                </h3>
+                <span class="text-xs text-amber-400 bg-amber-500/20 px-2 py-1 rounded-lg">
+                    {{ $stats['alertes_non_resolues'] ?? 0 }} non résolues
+                </span>
+            </div>
+            
+            <div class="p-4 space-y-3" id="alertes-list">
                 @forelse($alertes as $alerte)
-                <div class="alerte-item" style="background: #1f2128; padding: 1rem; border-radius: 1rem; border-left: 4px solid {{ $alerte->severite == 'critique' ? '#ff5e7c' : ($alerte->severite == 'haute' ? '#ffaa33' : '#2ef75b') }};">
-                    <div style="display: flex; justify-content: space-between; gap: 0.5rem; align-items: center;">
-                        <div>
-                            <span><i class="fas fa-{{ $alerte->severite == 'critique' ? 'skull-crosswalk' : ($alerte->type == 'intrusion' ? 'exclamation-triangle' : 'check-circle') }}" style="color: {{ $alerte->severite == 'critique' ? '#ff5e7c' : ($alerte->severite == 'haute' ? '#ffaa33' : '#2ef75b') }};"></i> <strong>{{ $alerte->nom_evenement }}</strong></span>
-                            <span style="color: #8ba9d0; margin-left: 0.75rem;">{{ $alerte->created_at->diffForHumans() }}</span>
+                @php
+                    $severityColor = match($alerte->severite) {
+                        'critique' => 'rose',
+                        'haute' => 'amber',
+                        default => 'emerald'
+                    };
+                    $severityIcon = match($alerte->severite) {
+                        'critique' => 'skull-crosswalk',
+                        'haute' => 'exclamation-triangle',
+                        default => 'check-circle'
+                    };
+                @endphp
+                <div class="bg-slate-900/50 border-l-4 border-{{ $severityColor }}-500 rounded-xl p-4 hover:bg-slate-800/50 transition">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fas fa-{{ $severityIcon }} text-{{ $severityColor }}-400"></i>
+                                <span class="font-medium text-white truncate">{{ $alerte->nom_evenement }}</span>
+                                <span class="text-xs text-slate-400">{{ $alerte->created_at->diffForHumans() }}</span>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-2">{{ Str::limit($alerte->description, 100) }}</p>
+                            <div class="flex items-center gap-2 text-xs text-slate-500">
+                                <span class="px-2 py-0.5 bg-slate-700 rounded text-{{ $severityColor }}-400">{{ ucfirst($alerte->statut) }}</span>
+                                @if($alerte->resolu_a)
+                                    <span>Résolu {{ $alerte->resolu_a->diffForHumans() }}</span>
+                                @endif
+                            </div>
                         </div>
-                        <div style="display: flex; gap: 0.5rem;">
+                        <div class="flex flex-col gap-1">
                             @if($alerte->statut != 'resolu')
-                                <button class="action-btn mark-resolved" data-id="{{ $alerte->id }}" title="Marquer résolu"><i class="fas fa-check-circle" style="color: #2ef75b;"></i></button>
+                                <button class="mark-resolved p-2 hover:bg-emerald-500/20 rounded-lg text-slate-400 hover:text-emerald-400 transition" data-id="{{ $alerte->id }}" title="Marquer résolu">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
                             @endif
-                            <button class="action-btn archive-alert" data-id="{{ $alerte->id }}" title="Archiver"><i class="fas fa-archive" style="color: #ffaa33;"></i></button>
-                            <button class="action-btn delete-alert" data-id="{{ $alerte->id }}" title="Supprimer"><i class="fas fa-trash" style="color: #ff5e7c;"></i></button>
+                            <button class="archive-alert p-2 hover:bg-amber-500/20 rounded-lg text-slate-400 hover:text-amber-400 transition" data-id="{{ $alerte->id }}" title="Archiver">
+                                <i class="fas fa-archive"></i>
+                            </button>
+                            <button class="delete-alert p-2 hover:bg-rose-500/20 rounded-lg text-slate-400 hover:text-rose-400 transition" data-id="{{ $alerte->id }}" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
-                    <div style="margin-top: 0.5rem;">{{ Str::limit($alerte->description, 100) }}</div>
-                    <div style="margin-top:0.5rem; font-size:.8rem; color:#8ba9d0;">Statut : {{ ucfirst($alerte->statut) }} {{ $alerte->resolu_a ? '• résolu ' . $alerte->resolu_a->diffForHumans() : '' }}</div>
                 </div>
                 @empty
-                <div style="background: #1f2128; padding: 1rem; border-radius: 1rem; border-left: 4px solid #2ef75b;">
-                    <div>Aucune alerte récente.</div>
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-check-circle text-emerald-400 text-2xl"></i>
+                    </div>
+                    <p class="text-slate-400">Aucune alerte récente</p>
                 </div>
                 @endforelse
             </div>
 
-            <div id="alertes-pagination-wrapper">
-                @if($alertes->hasPages())
-                    <div id="alertes-pagination" class="pagination-wrapper custom-pagination" style="margin-top: 1rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <a href="{{ $alertes->url(1) }}" class="page-item {{ $alertes->onFirstPage() ? 'disabled' : '' }}">« Début</a>
-                        <a href="{{ $alertes->previousPageUrl() ?: '#' }}" class="page-item {{ $alertes->onFirstPage() ? 'disabled' : '' }}">‹</a>
-
-                        @foreach(range(max(1, $alertes->currentPage() - 2), min($alertes->lastPage(), $alertes->currentPage() + 2)) as $page)
-                            <a href="{{ $alertes->url($page) }}" class="page-item {{ $alertes->currentPage() == $page ? 'active' : '' }}">{{ $page }}</a>
-                        @endforeach
-
-                        <a href="{{ $alertes->nextPageUrl() ?: '#' }}" class="page-item {{ $alertes->currentPage() == $alertes->lastPage() ? 'disabled' : '' }}">›</a>
-                        <a href="{{ $alertes->url($alertes->lastPage()) }}" class="page-item {{ $alertes->currentPage() == $alertes->lastPage() ? 'disabled' : '' }}">Fin »</a>
-                    </div>
-
-                    <div id="alertes-pagination-info" style="text-align:center; margin-top:0.7rem; color:#8ba9d0; font-size:0.9rem;">
-                        Page {{ $alertes->currentPage() }} / {{ $alertes->lastPage() }} — {{ $alertes->total() }} alertes
-                    </div>
-                @endif
+            <!-- Pagination -->
+            @if($alertes->hasPages())
+            <div class="p-4 border-t border-slate-700">
+                <div class="flex items-center justify-center gap-2">
+                    @if($alertes->onFirstPage())
+                        <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-600 cursor-not-allowed">
+                            <i class="fas fa-chevron-left text-sm"></i>
+                        </span>
+                    @else
+                        <a href="{{ $alertes->previousPageUrl() }}" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+                            <i class="fas fa-chevron-left text-sm"></i>
+                        </a>
+                    @endif
+                    
+                    <span class="text-sm text-slate-400">
+                        Page {{ $alertes->currentPage() }} / {{ $alertes->lastPage() }}
+                    </span>
+                    
+                    @if($alertes->hasMorePages())
+                        <a href="{{ $alertes->nextPageUrl() }}" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+                            <i class="fas fa-chevron-right text-sm"></i>
+                        </a>
+                    @else
+                        <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-800 text-slate-600 cursor-not-allowed">
+                            <i class="fas fa-chevron-right text-sm"></i>
+                        </span>
+                    @endif
+                </div>
             </div>
+            @endif
         </div>
-        <div class="card">
-            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem;">
-                <h3><i class="fas fa-firewall"></i> Règles firewall actives</h3>
-                <button id="add-firewall-rule" class="btn-add" style="padding: 0.3rem 1rem;"><i class="fas fa-plus"></i> Ajouter</button>
+
+        <!-- Firewall Rules Section -->
+        <div class="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
+            <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 class="font-semibold flex items-center gap-2">
+                    <i class="fas fa-firewall text-amber-400"></i>
+                    Règles firewall
+                </h3>
+                <button id="add-firewall-rule" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    <span class="hidden sm:inline">Ajouter</span>
+                </button>
             </div>
-            <div id="add-firewall-rule-form" style="display:none; background:#111d2f; margin-top:0.8rem; padding:0.75rem; border-radius:0.75rem; border:1px solid #22334a;">
-                <div style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center;">
-                    <input id="fw-rule-nom" type="text" placeholder="Nom de la règle" style="flex:1; min-width:180px; padding:0.4rem 0.55rem; background:#0f1b2f; border:1px solid #1f3347; color:#ffffff; border-radius:0.4rem;" />
-                    <select id="fw-rule-chain" style="padding:0.4rem 0.55rem; background:#0f1b2f; border:1px solid #1f3347; color:#ffffff; border-radius:0.4rem;">
+            
+            <!-- Add Rule Form -->
+            <div id="add-firewall-rule-form" class="hidden p-4 border-b border-slate-700 bg-slate-900/50">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <input type="text" id="fw-rule-nom" placeholder="Nom de la règle" 
+                           class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50">
+                    <select id="fw-rule-chain" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50">
                         <option value="input">input</option>
                         <option value="output">output</option>
                         <option value="forward">forward</option>
                         <option value="prerouting">prerouting</option>
                         <option value="postrouting">postrouting</option>
                     </select>
-                    <select id="fw-rule-action" style="padding:0.4rem 0.55rem; background:#0f1b2f; border:1px solid #1f3347; color:#ffffff; border-radius:0.4rem;">
+                    <select id="fw-rule-action" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50">
                         <option value="accept">accept</option>
                         <option value="drop">drop</option>
                         <option value="reject">reject</option>
-                        <option value="jump">jump</option>
                         <option value="log">log</option>
                     </select>
-                    <button id="save-firewall-rule" class="btn-add" style="padding:0.4rem 0.8rem;">Enregistrer</button>
-                    <button id="cancel-firewall-rule" class="btn-add" style="padding:0.4rem 0.8rem; background:#4d5d74;">Annuler</button>
+                    <div class="flex gap-2">
+                        <button id="save-firewall-rule" class="flex-1 px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-sm transition">
+                            <i class="fas fa-save"></i>
+                        </button>
+                        <button id="cancel-firewall-rule" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div style="max-height: 300px; overflow-y: auto;" id="rule-list">
+            
+            <div class="p-4 max-h-96 overflow-y-auto" id="rule-list">
                 @forelse($stats['regles_firewall_list'] ?? collect() as $rule)
-                    <div style="padding: 0.5rem 0; border-bottom: 1px solid #1d3347;">
-                        <div><i class="fas fa-check-circle" style="color: #2ef75b;"></i> <strong>{{ ucfirst($rule->chain ?: 'Règle') }}:</strong> {{ $rule->nom ?? 'Sans nom' }}</div>
+                <div class="flex items-center gap-3 py-3 border-b border-slate-700/50 last:border-0">
+                    <i class="fas fa-check-circle text-emerald-400"></i>
+                    <div class="flex-1">
+                        <span class="text-white font-medium">{{ $rule->nom ?? 'Sans nom' }}</span>
+                        <span class="text-slate-400 text-sm ml-2">({{ $rule->chain ?? 'N/A' }})</span>
                     </div>
+                    <span class="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300">{{ $rule->action ?? 'accept' }}</span>
+                </div>
                 @empty
-                    <div style="padding: 0.5rem 0; border-bottom: 1px solid #1d3347;">
-                        <div>Aucune règle active.</div>
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-shield-alt text-slate-500 text-2xl"></i>
                     </div>
+                    <p class="text-slate-400">Aucune règle active</p>
+                </div>
                 @endforelse
             </div>
         </div>
     </div>
 
-    <!-- Sessions actives -->
-    <div class="table-section">
-        <div class="section-header">
-            <h2><i class="fas fa-users"></i> Sessions actives</h2>
-            <button id="refresh-securite" class="btn-add"><i class="fas fa-sync-alt"></i> Actualiser</button>
+    <!-- Sessions Actives -->
+    <div class="mt-6 bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
+        <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+            <h3 class="font-semibold flex items-center gap-2">
+                <i class="fas fa-users text-cyan-400"></i>
+                Sessions actives
+            </h3>
+            <span class="text-xs text-slate-400">{{ count($stats['sessions_actives'] ?? []) }} session(s)</span>
         </div>
         
-        <div class="table-container">
-            <table>
-                <thead>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-900/50 border-b border-slate-700">
                     <tr>
-                        <th>Utilisateur</th>
-                        <th>Adresse IP</th>
-                        <th>Type</th>
-                        <th>Début</th>
-                        <th>Durée</th>
-                        <th>Trafic</th>
-                        <th>Actions</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">Utilisateur</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">IP</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">Type</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">Debut</th>
+                        <th class="text-left px-4 py-3 text-sm font-medium text-slate-400">Duree</th>
+                        <th class="text-center px-4 py-3 text-sm font-medium text-slate-400">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-slate-700/50">
                     @forelse($stats['sessions_actives'] ?? collect() as $session)
-                        @php
-                            $startTime = $session->last_activity ? \Carbon\Carbon::createFromTimestamp($session->last_activity) : null;
-                            $dur = $startTime ? $startTime->diffForHumans(['parts' => 2, 'short' => true]) : '-';
-                        @endphp
-                        <tr>
-                            <td><i class="fas fa-user"></i> {{ $session->user_name ?? ($session->user_email ?? 'Invité') }}</td>
-                            <td>{{ $session->ip_address ?? 'N/A' }}</td>
-                            <td>{{ $session->user_agent ? (\Illuminate\Support\Str::contains($session->user_agent, 'MikroTik') ? 'MikroTik' : 'Web') : 'Inconnu' }}</td>
-                            <td>{{ $startTime ? $startTime->format('H:i:s') : '-' }}</td>
-                            <td>{{ $dur }}</td>
-                            <td>-</td>
-                            <td><button class="action-btn" title="Déconnecter"><i class="fas fa-ban" style="color: #ff5e7c;"></i></button></td>
-                        </tr>
+                    @php
+                        $startTime = $session->last_activity ? \Carbon\Carbon::createFromTimestamp($session->last_activity) : null;
+                        $dur = $startTime ? $startTime->diffForHumans(['parts' => 2, 'short' => true]) : '-';
+                    @endphp
+                    <tr class="hover:bg-slate-800/30 transition">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-cyan-400 text-sm"></i>
+                                </div>
+                                <span class="text-white">{{ $session->user_name ?? ($session->user_email ?? 'Invite') }}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-slate-400 font-mono text-sm">{{ $session->ip_address ?? 'N/A' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="text-xs px-2 py-1 rounded-full {{ $session->user_agent && \Illuminate\Support\Str::contains($session->user_agent, 'MikroTik') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-cyan-500/20 text-cyan-400' }}">
+                                {{ $session->user_agent && \Illuminate\Support\Str::contains($session->user_agent, 'MikroTik') ? 'MikroTik' : 'Web' }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-slate-400 text-sm">{{ $startTime ? $startTime->format('H:i:s') : '-' }}</td>
+                        <td class="px-4 py-3 text-slate-400 text-sm">{{ $dur }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button class="p-2 hover:bg-rose-500/20 rounded-lg text-slate-400 hover:text-rose-400 transition" title="Deconnecter">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        </td>
+                    </tr>
                     @empty
-                        <tr>
-                            <td colspan="7" style="text-align: center;">Aucune session active détectée.</td>
-                        </tr>
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-slate-400">
+                            Aucune session active detectee
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
+
 </div>
 
+<!-- Three.js for 3D Security Shield -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-    async function refreshSecuriteData(page = 1) {
-        try {
-            console.log('🔄 Refresh données securité page ' + page);
-            const res = await fetch('/securite/data?page=' + page, {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin'
-            });
-            if (!res.ok) {
-                console.error('❌ Impossible de charger les données securite', res.status);
-                alert('Erreur lors du chargement. Code: ' + res.status);
-                return;
-            }
-            const stats = await res.json();
-            console.log('✅ Données reçues:', stats);
+(function() {
+    const container = document.getElementById('security3D');
+    if (!container) return;
 
-            // Mise à jour stats cartes
-            const badgeAlertes = document.querySelector('#badge-alertes');
-            if (badgeAlertes) badgeAlertes.textContent = `${stats.alertes_non_resolues ?? 0} non résolues`;
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1e293b);
+    
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.z = 5;
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
 
-            const statCards = document.querySelectorAll('.stats-grid .stat-card');
-            if (statCards[0]) statCards[0].querySelector('.stat-value').textContent = `${stats.niveau_securite ?? 0}%`;
-            if (statCards[1]) {
-                statCards[1].querySelector('.stat-value').textContent = `${stats.tentatives_bloc ?? 0}`;
-                statCards[1].querySelector('.stat-change').textContent = `+${stats.tentatives_bloc_today ?? 0} aujourd'hui`;
-            }
-            if (statCards[2]) statCards[2].querySelector('.stat-value').textContent = `${stats.regles_firewall ?? 0}`;
-            if (statCards[3]) statCards[3].querySelector('.stat-value').textContent = `${stats.connexions_tls ?? 0}`;
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x404040, 2);
+    scene.add(ambientLight);
+    
+    const pointLight1 = new THREE.PointLight(0x10b981, 2, 50);
+    pointLight1.position.set(5, 5, 5);
+    scene.add(pointLight1);
+    
+    const pointLight2 = new THREE.PointLight(0x06b6d4, 2, 50);
+    pointLight2.position.set(-5, -5, 5);
+    scene.add(pointLight2);
 
-            // Mise à jour règles firewall
-            const rulesContainer = document.getElementById('rule-list');
-            if (rulesContainer) {
-                rulesContainer.innerHTML = '';
-                if ((stats.regles_firewall_list || []).length === 0) {
-                    rulesContainer.innerHTML = '<div style="padding: 0.5rem 0; border-bottom: 1px solid #1d3347;"><div>Aucune règle active.</div></div>';
-                } else {
-                    stats.regles_firewall_list.forEach(rule => {
-                        rulesContainer.innerHTML += `<div style="padding: 0.5rem 0; border-bottom: 1px solid #1d3347;"><div><i class="fas fa-check-circle" style="color: #2ef75b;"></i> <strong>${(rule.chain || 'Règle').charAt(0).toUpperCase() + (rule.chain || 'Règle').slice(1)}:</strong> ${rule.nom || 'Sans nom'}</div></div>`;
-                    });
-                }
-            }
+    // Shield Geometry - Icosahedron for shield shape
+    const shieldGeometry = new THREE.IcosahedronGeometry(1.5, 1);
+    const shieldMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x10b981,
+        emissive: 0x059669,
+        emissiveIntensity: 0.3,
+        shininess: 100,
+        transparent: true,
+        opacity: 0.9,
+        wireframe: false
+    });
+    const shield = new THREE.Mesh(shieldGeometry, shieldMaterial);
+    scene.add(shield);
 
-            // Mise à jour alertes
-            const alerteList = document.getElementById('alertes-list');
-            if (alerteList) {
-                alerteList.innerHTML = '';
-                if ((stats.alertes || []).length === 0) {
-                    alerteList.innerHTML = '<div style="background: #1f2128; padding: 1rem; border-radius: 1rem; border-left: 4px solid #2ef75b;"><div>Aucune alerte récente.</div></div>';
-                } else {
-                    stats.alertes.forEach(alerte => {
-                        const couleur = alerte.severite === 'critique' ? '#ff5e7c' : alerte.severite === 'haute' ? '#ffaa33' : '#2ef75b';
-                        const icon = alerte.severite === 'critique' ? 'skull-crosswalk' : (alerte.type === 'intrusion' ? 'exclamation-triangle' : 'check-circle');
-                        const age = new Date(alerte.created_at).toLocaleString('fr-FR');
+    // Wireframe overlay
+    const wireframeGeometry = new THREE.IcosahedronGeometry(1.52, 1);
+    const wireframeMaterial = new THREE.MeshBasicMaterial({
+        color: 0x34d399,
+        transparent: true,
+        opacity: 0.3,
+        wireframe: true
+    });
+    const wireframe = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+    scene.add(wireframe);
 
-                        let actions = '';
-                        if (alerte.statut !== 'resolu') {
-                            actions += `<button class="action-btn mark-resolved" data-id="${alerte.id}" title="Marquer résolu"><i class="fas fa-check-circle" style="color: #2ef75b;"></i></button>`;
-                        }
-                        actions += `<button class="action-btn archive-alert" data-id="${alerte.id}" title="Archiver"><i class="fas fa-archive" style="color: #ffaa33;"></i></button>`;
-                        actions += `<button class="action-btn delete-alert" data-id="${alerte.id}" title="Supprimer"><i class="fas fa-trash" style="color: #ff5e7c;"></i></button>`;
-
-                        alerteList.innerHTML += `
-                            <div class="alerte-item" style="background: #1f2128; padding: 1rem; border-radius: 1rem; border-left: 4px solid ${couleur};">
-                                <div style="display: flex; justify-content: space-between; gap: 0.5rem; align-items: center;">
-                                    <div>
-                                        <span><i class="fas fa-${icon}" style="color: ${couleur};"></i> <strong>${alerte.nom_evenement}</strong></span>
-                                        <span style="color: #8ba9d0; margin-left: 0.75rem;">${age}</span>
-                                    </div>
-                                    <div style="display: flex; gap: 0.5rem;">${actions}</div>
-                                </div>
-                                <div style="margin-top: 0.5rem;">${alerte.description ? alerte.description.substring(0, 100) : ''}</div>
-                                <div style="margin-top:0.5rem; font-size:.8rem; color:#8ba9d0;">Statut : ${alerte.statut ? alerte.statut.charAt(0).toUpperCase() + alerte.statut.slice(1) : 'Inconnu'}</div>
-                            </div>
-                        `;
-                    });
-                }
-            }
-
-            // Mise à jour pagination alertes
-            const paginationContainer = document.getElementById('alertes-pagination');
-            const paginationInfo = document.getElementById('alertes-pagination-info');
-            if (paginationContainer && paginationInfo) {
-                if (!stats.alertes_last_page || stats.alertes_last_page <= 1) {
-                    paginationContainer.innerHTML = '';
-                    paginationInfo.textContent = `Page 1 / 1 — ${stats.alertes_total || 0} alertes`;
-                } else {
-                    const current = stats.alertes_current_page || 1;
-                    const last = stats.alertes_last_page;
-                    paginationContainer.innerHTML = '';
-
-                    const button = (label, page, disabled) => `<a href="#" class="page-item ${disabled ? 'disabled' : ''}" data-page="${page}">${label}</a>`;
-
-                    paginationContainer.innerHTML += button('« Début', 1, current === 1);
-                    paginationContainer.innerHTML += button('‹', Math.max(1, current - 1), current === 1);
-
-                    for (let p = Math.max(1, current - 2); p <= Math.min(last, current + 2); p++) {
-                        paginationContainer.innerHTML += button(p, p, false);
-                    }
-
-                    paginationContainer.innerHTML += button('›', Math.min(last, current + 1), current === last);
-                    paginationContainer.innerHTML += button('Fin »', last, current === last);
-
-                    paginationInfo.textContent = `Page ${current} / ${last} — ${stats.alertes_total || 0} alertes`;
-
-                    paginationContainer.querySelectorAll('.page-item').forEach(el => {
-                        const page = parseInt(el.dataset.page, 10);
-                        if (!isNaN(page) && !el.classList.contains('disabled')) {
-                            el.addEventListener('click', e => {
-                                e.preventDefault();
-                                refreshSecuriteData(page);
-                            });
-                        }
-                    });
-                }
-            }
-
-            const tbody = document.querySelector('.table-section table tbody');
-            if (tbody) {
-                tbody.innerHTML = '';
-                if ((stats.sessions_actives || []).length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Aucune session active détectée.</td></tr>`;
-                } else {
-                    stats.sessions_actives.forEach(session => {
-                        const startTime = session.last_activity ? new Date(session.last_activity * 1000) : null;
-                        const horaire = startTime ? startTime.toLocaleTimeString('fr-FR') : '-';
-                        const duree = startTime ? Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 60000)) + ' min' : '-';
-                        const agent = session.user_agent && session.user_agent.includes('MikroTik') ? 'MikroTik' : 'Web';
-                        const user = session.user_name || session.user_email || 'Invité';
-
-                        tbody.innerHTML += `
-                            <tr data-session-id="${session.id}">
-                                <td><i class="fas fa-user"></i> ${user}</td>
-                                <td>${session.ip_address || 'N/A'}</td>
-                                <td>${agent}</td>
-                                <td>${horaire}</td>
-                                <td>${duree}</td>
-                                <td>-</td>
-                                <td><button class="action-btn disconnect-session" data-session-id="${session.id}" title="Déconnecter"><i class="fas fa-ban" style="color: #ff5e7c;"></i></button></td>
-                            </tr>
-                        `;
-                    });
-                }
-            }
-
-            document.querySelectorAll('.disconnect-session').forEach(button => {
-                button.addEventListener('click', async () => {
-                    const sessionId = button.dataset.sessionId;
-                    await fetch(`/securite/sessions/${sessionId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        }
-                    });
-                    await refreshSecuriteData();
-                });
-            });
-
-            document.querySelectorAll('.mark-resolved').forEach(button => {
-                button.addEventListener('click', async () => {
-                    const id = button.dataset.id;
-                    await fetch(`/securite/alertes/${id}/resolve`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        }
-                    });
-                    await refreshSecuriteData();
-                });
-            });
-
-            document.querySelectorAll('.archive-alert').forEach(button => {
-                button.addEventListener('click', async () => {
-                    const id = button.dataset.id;
-                    await fetch(`/securite/alertes/${id}/archive`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        }
-                    });
-                    await refreshSecuriteData();
-                });
-            });
-
-            document.querySelectorAll('.delete-alert').forEach(button => {
-                button.addEventListener('click', async () => {
-                    const id = button.dataset.id;
-                    await fetch(`/securite/alertes/${id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        }
-                    });
-                    await refreshSecuriteData();
-                });
-            });
-
-            console.log('✅ Refresh terminé avec succès');
-
-        } catch (error) {
-            console.error('❌ Erreur lors du refresh:', error);
-            alert('Erreur lors du chargement. Vérifiez la console.');
-        }
+    // Orbiting particles representing threats
+    const particles = [];
+    const particleCount = 8;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: i < 2 ? 0xf43f5e : 0x10b981, // Red for threats, green for safe
+            transparent: true,
+            opacity: 0.8
+        });
+        const particle = new THREE.Mesh(geometry, material);
+        
+        const angle = (2 * Math.PI / particleCount) * i;
+        const radius = 3 + Math.random() * 0.5;
+        particle.position.x = radius * Math.cos(angle);
+        particle.position.y = radius * Math.sin(angle);
+        particle.position.z = (Math.random() - 0.5) * 2;
+        
+        particle.userData = {
+            angle: angle,
+            radius: radius,
+            speed: 0.01 + Math.random() * 0.01,
+            isThreat: i < 2
+        };
+        
+        scene.add(particle);
+        particles.push(particle);
     }
 
-    function setupAddRuleButton() {
-        const addBtn = document.getElementById('add-firewall-rule');
-        const form = document.getElementById('add-firewall-rule-form');
-        const saveBtn = document.getElementById('save-firewall-rule');
-        const cancelBtn = document.getElementById('cancel-firewall-rule');
-
-        if (!addBtn || !form || !saveBtn || !cancelBtn) return;
-
-        addBtn.addEventListener('click', () => {
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    // Connections between shield and particles
+    const lines = [];
+    particles.forEach(particle => {
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            particle.position
+        ]);
+        const lineMaterial = new THREE.LineBasicMaterial({ 
+            color: particle.userData.isThreat ? 0xf43f5e : 0x10b981,
+            transparent: true,
+            opacity: 0.2
         });
-
-        cancelBtn.addEventListener('click', () => {
-            form.style.display = 'none';
-        });
-
-        saveBtn.addEventListener('click', async () => {
-            const nom = document.getElementById('fw-rule-nom').value.trim();
-            const chain = document.getElementById('fw-rule-chain').value;
-            const action = document.getElementById('fw-rule-action').value;
-
-            if (!nom) {
-                alert('Veuillez saisir un nom de règle.');
-                return;
-            }
-
-            const res = await fetch('{{ route('securite.firewall-rules.store') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ nom, chain, action })
-            });
-
-            if (res.ok) {
-                document.getElementById('fw-rule-nom').value = '';
-                form.style.display = 'none';
-                await refreshSecuriteData();
-            } else {
-                const json = await res.json();
-                alert(json.message || 'Impossible d’ajouter la règle.');
-            }
-        });
-    }
-
-    function setupActionButtons() {
-        document.querySelectorAll('.disconnect-session').forEach(button => {
-            button.addEventListener('click', async () => {
-                const sessionId = button.dataset.sessionId;
-                await fetch(`/securite/sessions/${sessionId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                });
-                await refreshSecuriteData();
-            });
-        });
-
-        document.querySelectorAll('.mark-resolved').forEach(button => {
-            button.addEventListener('click', async () => {
-                const id = button.dataset.id;
-                await fetch(`/securite/alertes/${id}/resolve`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                });
-                await refreshSecuriteData();
-            });
-        });
-
-        document.querySelectorAll('.archive-alert').forEach(button => {
-            button.addEventListener('click', async () => {
-                const id = button.dataset.id;
-                await fetch(`/securite/alertes/${id}/archive`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                });
-                await refreshSecuriteData();
-            });
-        });
-
-        document.querySelectorAll('.delete-alert').forEach(button => {
-            button.addEventListener('click', async () => {
-                const id = button.dataset.id;
-                await fetch(`/securite/alertes/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                });
-                await refreshSecuriteData();
-            });
-        });
-    }
-
-    document.getElementById('refresh-securite').addEventListener('click', function (e) {
-        e.preventDefault();
-        console.log('🔘 Clic sur Actualiser');
-        this.disabled = true;
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
-        refreshSecuriteData().finally(() => {
-            this.disabled = false;
-            this.innerHTML = '<i class="fas fa-sync-alt"></i> Actualiser';
-        });
+        const line = new THREE.Line(lineGeometry, lineMaterial);
+        scene.add(line);
+        lines.push(line);
     });
 
-    setupAddRuleButton();
-    refreshSecuriteData();
-</script>
+    // Animation
+    let isActive = true;
+    const animate = () => {
+        if (!isActive) return;
+        requestAnimationFrame(animate);
 
+        // Rotate shield
+        shield.rotation.y += 0.005;
+        shield.rotation.x += 0.002;
+        wireframe.rotation.y += 0.005;
+        wireframe.rotation.x += 0.002;
+
+        // Pulse shield
+        const scale = 1 + Math.sin(Date.now() * 0.001) * 0.05;
+        shield.scale.set(scale, scale, scale);
+
+        // Animate particles
+        particles.forEach((particle, i) => {
+            particle.userData.angle += particle.userData.speed;
+            const r = particle.userData.radius;
+            particle.position.x = r * Math.cos(particle.userData.angle);
+            particle.position.y = r * Math.sin(particle.userData.angle);
+            
+            // Update line
+            lines[i].geometry.setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                particle.position
+            ]);
+        });
+
+        renderer.render(scene, camera);
+    };
+
+    animate();
+
+    // Handle resize
+    const handleResize = () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup on page hide
+    document.addEventListener('visibilitychange', () => {
+        isActive = document.visibilityState === 'visible';
+        if (isActive) animate();
+    });
+})();
+
+// Toggle firewall form
+document.getElementById('add-firewall-rule')?.addEventListener('click', () => {
+    const form = document.getElementById('add-firewall-rule-form');
+    form.classList.toggle('hidden');
+});
+
+document.getElementById('cancel-firewall-rule')?.addEventListener('click', () => {
+    document.getElementById('add-firewall-rule-form').classList.add('hidden');
+});
+
+// Refresh button
+document.getElementById('refresh-securite')?.addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualiser';
+    
+    try {
+        const res = await fetch('/securite/data', {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        });
+        if (res.ok) {
+            window.location.reload();
+        }
+    } catch (e) {
+        console.error('Refresh error:', e);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualiser';
+    }
+});
+</script>
 @endsection

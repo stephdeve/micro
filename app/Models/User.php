@@ -28,6 +28,7 @@ class User extends Authenticatable
         'est_actif',
         'derniere_connexion',
         'avatar',
+        'service_id',
     ];
 
     /**
@@ -62,8 +63,33 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'receiver_id');
     }
 
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
+    }
+
     public function isActif(): bool
     {
         return $this->est_actif;
+    }
+
+    public function isAdminReseau(): bool
+    {
+        return $this->hasRole('admin_reseau');
+    }
+
+    public function isAdminService(): bool
+    {
+        return $this->hasRole('admin_service');
+    }
+
+    public function isEmploye(): bool
+    {
+        return $this->hasRole('employe');
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super_admin');
     }
 }

@@ -10,8 +10,11 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "pear2/net_routeros": "dev-develop",
+        "phpoffice/phpspreadsheet": "^5.6",
         "spatie/laravel-permission": "^6.24"
     },
     "require-dev": {
@@ -87,6 +90,6 @@
             "php-http/discovery": true
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }

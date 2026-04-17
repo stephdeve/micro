@@ -4,351 +4,428 @@ namespace App\Http\Controllers;
 
 use App\Models\Message;
 use App\Models\User;
-use App\Notifications\MessageReceivedNotification;
+use App\Models\Conversation;
+use App\Models\MessageAttachment;
+use App\Models\MessageRecipient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 
 class MessageController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     /**
-     * Display a listing of the resource.
+     * Interface de messagerie avec conversations
      */
     public function index(Request $request)
     {
-        $folder = $request->get('folder', 'inbox');
-        $query = Message::query();
+        $user = Auth::user();
+        
+        // Récupérer les conversations de l'utilisateur
+        $conversations = Conversation::whereHas('members', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })
+        ->with(['members', 'lastMessage'])
+        ->withCount(['messages as unread_count' => function ($query) use ($user) {
+            $query->where('sender_id', '!=', $user->id)
+              ->whereDoesntHave('recipients', function ($q) use ($user) {
+                  $q->where('user_id', $user->id)->whereNotNull('read_at');
+              });
+        }])
+        ->orderByDesc(
+            Message::select('created_at')
+                ->whereColumn('conversation_id', 'conversations.id')
+                ->latest()
+                ->take(1)
+        )
+        ->get();
 
-        // Filtrer par dossier
-        switch($folder) {
-            case 'inbox':
-                $query->where('receiver_id', Auth::id())->where('folder', 'inbox');
-                break;
-            case 'sent':
-                $query->where('sender_id', Auth::id())->where('folder', 'sent');
-                break;
-            case 'starred':
-                $query->where('receiver_id', Auth::id())->where('is_starred', true);
-                break;
-            case 'archive':
-                $query->where('folder', 'archive')
-                      ->where(function($q) {
-                          $q->where('receiver_id', Auth::id())
-                            ->orWhere('sender_id', Auth::id());
-                      });
-                break;
-            case 'trash':
-                $query->where('receiver_id', Auth::id())->where('folder', 'trash');
-                break;
-        }
-
-        // Filtres supplémentaires
-        if ($request->has('unread')) {
-            $query->where('is_read', false);
-        }
-
-        if ($request->has('attachments')) {
-            $query->where('has_attachments', true);
-        }
-
-        if ($request->has('starred')) {
-            $query->where('is_starred', true);
-        }
-
-        if ($request->has('urgent')) {
-            $query->whereIn('priority', ['haute', 'urgente']);
-        }
-
-        if ($request->filled('tag')) {
-            $query->where('tag', $request->tag);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('subject', 'like', "%{$search}%")
-                  ->orWhere('content', 'like', "%{$search}%");
+        // Conversation sélectionnée
+        $activeConversation = null;
+        $messages = collect();
+        
+        if ($request->has('conversation')) {
+            $activeConversation = Conversation::findOrFail($request->conversation);
+            
+            // Vérifier que l'utilisateur est membre
+            if (!$activeConversation->members->contains($user->id)) {
+                abort(403, 'Vous n\'êtes pas membre de cette conversation');
+            }
+            
+            // Marquer les messages comme lus
+            $this->markConversationAsRead($activeConversation, $user->id);
+            
+            // Récupérer les messages déchiffrés
+            $messages = $activeConversation->messages()
+                ->with(['sender', 'attachments'])
+                ->orderBy('created_at', 'asc')
+                ->paginate(50);
+                
+            // Déchiffrer les messages pour l'affichage
+            $messages->getCollection()->transform(function ($message) {
+                $message->decrypted_body = $message->decrypt();
+                return $message;
             });
         }
 
-        $messages = $query->with('sender')
-                         ->latest()
-                         ->paginate(15);
+        // Liste des utilisateurs pour nouvelle conversation
+        $users = User::where('id', '!=', $user->id)
+            ->where('est_actif', true)
+            ->orderBy('name')
+            ->get();
 
-        // Statistiques
-        $stats = [
-            'total' => Message::where('receiver_id', Auth::id())->count(),
-            'non_lus' => Message::where('receiver_id', Auth::id())->where('is_read', false)->count(),
-            'importants' => Message::where('receiver_id', Auth::id())->whereIn('priority', ['haute', 'urgente'])->count(),
-            'utilisateurs' => User::count(),
-            'chiffrement' => 'TLS 1.3',
-            'algorithme' => 'AES-256-GCM'
-        ];
+        // Compteur de messages non lus total
+        $totalUnread = MessageRecipient::where('user_id', $user->id)
+            ->whereNull('read_at')
+            ->count();
 
-        $users = User::where('id', '!=', Auth::id())->get();
-
-        return view('messagerie', compact('messages', 'stats', 'folder', 'users'));
+        return view('messagerie.index', compact(
+            'conversations', 
+            'activeConversation', 
+            'messages', 
+            'users',
+            'totalUnread'
+        ));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Créer une nouvelle conversation privée
+     */
+    public function createConversation(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id|not_in:' . Auth::id(),
+        ]);
+
+        $user = Auth::user();
+        $otherUser = User::findOrFail($validated['user_id']);
+
+        // Vérifier si une conversation privée existe déjà
+        $existingConversation = Conversation::where('is_group', false)
+            ->whereHas('members', function ($query) use ($user) {
+                $query->where('users.id', $user->id);
+            })
+            ->whereHas('members', function ($query) use ($otherUser) {
+                $query->where('users.id', $otherUser->id);
+            })
+            ->first();
+
+        if ($existingConversation) {
+            return redirect()->route('messagerie.index', ['conversation' => $existingConversation->id]);
+        }
+
+        // Créer une nouvelle conversation
+        $conversation = Conversation::create([
+            'created_by' => $user->id,
+            'is_group' => false,
+        ]);
+
+        // Ajouter les membres
+        $conversation->members()->attach([$user->id, $otherUser->id], ['joined_at' => now()]);
+
+        return redirect()->route('messagerie.index', ['conversation' => $conversation->id])
+            ->with('success', 'Conversation démarrée avec ' . $otherUser->name);
+    }
+
+    /**
+     * Créer un groupe
+     */
+    public function createGroup(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100',
+            'members' => 'required|array|min:1',
+            'members.*' => 'exists:users,id',
+        ]);
+
+        $user = Auth::user();
+
+        $conversation = Conversation::create([
+            'name' => $validated['name'],
+            'created_by' => $user->id,
+            'is_group' => true,
+        ]);
+
+        // Ajouter le créateur comme admin
+        $conversation->members()->attach($user->id, [
+            'role' => 'admin',
+            'joined_at' => now()
+        ]);
+
+        // Ajouter les autres membres
+        if (!empty($validated['members'])) {
+            $conversation->members()->attach($validated['members'], [
+                'role' => 'member',
+                'joined_at' => now()
+            ]);
+        }
+
+        return redirect()->route('messagerie.index', ['conversation' => $conversation->id])
+            ->with('success', 'Groupe "' . $validated['name'] . '" créé');
+    }
+
+    /**
+     * Envoyer un message (chiffré AES-256)
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'receiver_id' => 'required_if:send_to_all,0|nullable|exists:users,id',
-            'send_to_all' => 'nullable|boolean',
-            'subject' => 'required|string|max:255',
-            'content' => 'required|string',
-            'priority' => 'in:basse,normale,haute,urgente',
-            'tag' => 'nullable|string|max:50',
-            'attachments.*' => 'nullable|file|max:10240', // 10MB max
+        $validated = $request->validate([
+            'conversation_id' => 'required|exists:conversations,id',
+            'content' => 'required|string|max:5000',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|max:10240', // 10MB max
         ]);
 
-        $sendToAll = $request->boolean('send_to_all');
-        $receivers = $sendToAll
-            ? User::where('id', '!=', Auth::id())->get()
-            : User::where('id', $request->receiver_id)->get();
+        $user = Auth::user();
+        $conversation = Conversation::findOrFail($validated['conversation_id']);
 
-        // Message envoyé (archive envoyé)
-        $encryptedContent = $request->is_secure ? Crypt::encryptString($request->content) : $request->content;
+        // Vérifier que l'utilisateur est membre
+        if (!$conversation->members->contains($user->id)) {
+            return response()->json(['error' => 'Non autorisé'], 403);
+        }
 
-        $sentMessage = Message::create([
-            'sender_id' => Auth::id(),
-            'receiver_id' => $sendToAll ? null : $request->receiver_id,
-            'subject' => $request->subject,
-            'content' => $encryptedContent,
-            'priority' => $request->priority ?? 'normale',
-            'is_secure' => $request->has('is_secure'),
-            'folder' => 'sent',
-            'tag' => $request->tag ?? 'reseau',
+        // Chiffrer le message avec AES-256
+        $encrypted = Message::encrypt($validated['content']);
+
+        // Créer le message
+        $message = Message::create([
+            'sender_id' => $user->id,
+            'conversation_id' => $conversation->id,
+            'encrypted_content' => $encrypted['content'],
+            'encryption_iv' => $encrypted['iv'],
+            'encryption_key_hash' => $encrypted['key_hash'],
+            'is_group_message' => $conversation->is_group,
+            'is_encrypted' => true,
+            'message_type' => 'text',
         ]);
 
-        $attachmentParams = [];
-        // Gérer les pièces jointes pour le message envoyé et en copie
+        // Ajouter les destinataires
+        $recipients = $conversation->members
+            ->where('id', '!=', $user->id)
+            ->pluck('id')
+            ->toArray();
+
+        foreach ($recipients as $recipientId) {
+            MessageRecipient::create([
+                'message_id' => $message->id,
+                'user_id' => $recipientId,
+            ]);
+        }
+
+        // Traiter les pièces jointes
         if ($request->hasFile('attachments')) {
-            $sentMessage->has_attachments = true;
-            $sentMessage->save();
-
             foreach ($request->file('attachments') as $file) {
-                $path = $file->store('attachments/' . $sentMessage->id, 'public');
-                $attachmentParams[] = [
-                    'filename' => $file->getClientOriginalName(),
-                    'original_filename' => $file->getClientOriginalName(),
-                    'file_path' => $path,
-                    'file_size' => $file->getSize(),
-                    'file_type' => $file->getMimeType(),
-                ];
-            }
-
-            foreach ($attachmentParams as $params) {
-                $sentMessage->attachments()->create($params);
+                $this->handleAttachment($message, $file);
             }
         }
 
-        // Créer le message pour chaque destinataire (inbox)
-        foreach ($receivers as $receiver) {
-            $receiverMessage = Message::create([
-                'sender_id' => Auth::id(),
-                'receiver_id' => $receiver->id,
-                'subject' => $request->subject,
-                'content' => $encryptedContent,
-                'priority' => $request->priority ?? 'normale',
-                'is_secure' => $request->has('is_secure'),
-                'folder' => 'inbox',
-                'tag' => $request->tag ?? 'reseau',
-            ]);
-
-            if (!empty($attachmentParams)) {
-                $receiverMessage->has_attachments = true;
-                $receiverMessage->save();
-                foreach ($attachmentParams as $params) {
-                    $receiverMessage->attachments()->create($params);
-                }
-            }
-
-            // Notification pour chaque destinataire
-            try {
-                $receiver->notify(new MessageReceivedNotification(
-                    Auth::user()->name,
-                    $request->subject,
-                    'Vous avez reçu un message de ' . Auth::user()->name . ' : ' . $request->subject,
-                    route('messagerie.show', $receiverMessage),
-                    $receiverMessage->id
-                ));
-            } catch (\Exception $e) {
-                Log::error('Notification email message failed', [
-                    'receiver_id' => $receiver->id,
-                    'message_id' => $receiverMessage->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => $sentMessage]);
-        }
-
-        return redirect()->route('messagerie.index')->with('success', 'Message envoyé avec succès.');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Message $messagerie)
-    {
-        // Marquer comme lu si c'est le destinataire
-        if ($messagerie->receiver_id == Auth::id() && !$messagerie->is_read) {
-            $messagerie->update([
-                'is_read' => true,
-                'read_at' => now()
-            ]);
-        }
-
-        $messagerie->load('sender', 'receiver', 'attachments');
-
-        // Déchiffrer si nécessaire
-        if ($messagerie->is_secure) {
-            try {
-                $messagerie->content = Crypt::decryptString($messagerie->content);
-            } catch (\Exception $e) {
-                $messagerie->content = '[Impossible de déchiffrer ce message]';
-            }
-        }
-
-        return view('messages.show', ['message' => $messagerie]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Message $messagerie)
-    {
-        // Pour marquer comme lu/non lu, favori, etc.
-        if ($request->has('is_starred')) {
-            $messagerie->update(['is_starred' => !$messagerie->is_starred]);
-            return response()->json(['success' => true, 'is_starred' => $messagerie->is_starred]);
-        }
-
-        if ($request->has('is_read')) {
-            $messagerie->update(['is_read' => !$messagerie->is_read]);
-            return response()->json(['success' => true, 'is_read' => $messagerie->is_read]);
-        }
-
-        return response()->json(['success' => false], 400);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Message $messagerie)
-    {
-        // Soft delete ou déplacer vers la corbeille
-        if ($messagerie->folder == 'trash') {
-            $messagerie->delete(); // Suppression définitive
-        } else {
-            $messagerie->update(['folder' => 'trash']);
-        }
-
-        return redirect()->route('messagerie.index')->with('success', 'Message déplacé vers la corbeille.');
-    }
-
-    /**
-     * Restaurer un message depuis la corbeille.
-     */
-    public function restore($id)
-    {
-        $message = Message::withTrashed()->findOrFail($id);
-        
-        // Vérifier que le message appartient à l'utilisateur
-        if ($message->receiver_id !== Auth::id() && $message->sender_id !== Auth::id()) {
-            abort(403, 'Non autorisé');
-        }
-        
-        $message->folder = 'inbox';
-        $message->save();
-
-        return redirect()->route('messagerie.index', ['folder' => 'inbox'])->with('success', 'Message restauré.');
-    }
-
-    /**
-     * Archiver un message.
-     */
-    public function archive(Message $messagerie)
-    {
-        // Vérifier que le message appartient à l'utilisateur (en tant que destinataire ou expéditeur)
-        if ($messagerie->receiver_id !== Auth::id() && $messagerie->sender_id !== Auth::id()) {
-            abort(403, 'Non autorisé');
-        }
-
-        $messagerie->update(['folder' => 'archive']);
-        return redirect()->route('messagerie.index', ['folder' => 'archive'])->with('success', 'Message archivé.');
-    }
-
-    /**
-     * Basculer étoile (favori) d'un message.
-     */
-    public function toggleStar(Message $messagerie)
-    {
-        // Vérifier que le message appartient à l'utilisateur
-        if ($messagerie->receiver_id !== Auth::id() && $messagerie->sender_id !== Auth::id()) {
-            abort(403, 'Non autorisé');
-        }
-
-        $messagerie->update(['is_starred' => !$messagerie->is_starred]);
-        return response()->json(['success' => true, 'is_starred' => $messagerie->is_starred]);
-    }
-
-    /**
-     * Télécharger une pièce jointe.
-     */
-    public function downloadAttachment($messagerie, $attachment)
-    {
-        $message = Message::findOrFail($messagerie);
-        $file = $message->attachments()->findOrFail($attachment);
-        
-        return Storage::disk('public')->download($file->file_path, $file->filename);
-    }
-
-    /**
-     * Effectuer une action en batch sur plusieurs messages.
-     */
-    public function batchAction(Request $request)
-    {
-        $request->validate([
-            'message_ids' => 'required|array|min:1',
-            'message_ids.*' => 'exists:messages,id',
-            'action' => 'required|in:trash,delete',
-        ]);
-
-        $messageIds = $request->message_ids;
-        $action = $request->action;
-
-        if ($action === 'trash') {
-            // Déplacer vers la corbeille
-            Message::whereIn('id', $messageIds)
-                ->where(function($q) {
-                    $q->where('receiver_id', Auth::id())
-                      ->orWhere('sender_id', Auth::id());
-                })
-                ->update(['folder' => 'trash']);
-        } elseif ($action === 'delete') {
-            // Supprimer définitivement uniquement les messages de la corbeille
-            Message::whereIn('id', $messageIds)
-                ->where('folder', 'trash')
-                ->where(function($q) {
-                    $q->where('receiver_id', Auth::id())
-                      ->orWhere('sender_id', Auth::id());
-                })
-                ->delete();
-        }
+        // Charger les relations pour la réponse
+        $message->load(['sender', 'attachments']);
+        $message->decrypted_body = $validated['content']; // On a déjà le contenu en clair
 
         if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Action effectuée avec succès.']);
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'html' => view('messagerie.partials.message', compact('message'))->render()
+            ]);
         }
 
-        return redirect()->back()->with('success', 'Action effectuée avec succès.');
+        return redirect()->route('messagerie.index', ['conversation' => $conversation->id]);
+    }
+
+    /**
+     * Gérer une pièce jointe
+     */
+    private function handleAttachment(Message $message, $file): void
+    {
+        $originalName = $file->getClientOriginalName();
+        $storedName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $path = 'messages/' . $message->conversation_id;
+
+        // Stocker le fichier
+        Storage::disk('local')->putFileAs($path, $file, $storedName);
+
+        // Créer l'enregistrement
+        MessageAttachment::create([
+            'message_id' => $message->id,
+            'original_filename' => $originalName,
+            'stored_filename' => $storedName,
+            'file_path' => $path . '/' . $storedName,
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
+            'file_hash' => hash_file('sha256', $file->getRealPath()),
+            'is_encrypted' => false, // Les fichiers ne sont pas chiffrés par défaut
+        ]);
+
+        // Mettre à jour le type de message
+        $message->update(['message_type' => 'file']);
+    }
+
+    /**
+     * Télécharger une pièce jointe
+     */
+    public function downloadAttachment(MessageAttachment $attachment)
+    {
+        // Vérifier que l'utilisateur est destinataire ou expéditeur
+        $user = Auth::user();
+        $message = $attachment->message;
+        
+        $isAuthorized = $message->sender_id === $user->id || 
+                        $message->recipients()->where('user_id', $user->id)->exists();
+        
+        if (!$isAuthorized) {
+            abort(403, 'Non autorisé');
+        }
+
+        $path = storage_path('app/' . $attachment->file_path);
+        
+        if (!file_exists($path)) {
+            abort(404, 'Fichier non trouvé');
+        }
+
+        return response()->download($path, $attachment->original_filename);
+    }
+
+    /**
+     * Marquer une conversation comme lue
+     */
+    private function markConversationAsRead(Conversation $conversation, int $userId): void
+    {
+        MessageRecipient::whereIn('message_id', function ($query) use ($conversation, $userId) {
+                $query->select('id')
+                    ->from('messages')
+                    ->where('conversation_id', $conversation->id)
+                    ->where('sender_id', '!=', $userId);
+            })
+            ->where('user_id', $userId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+    }
+
+    /**
+     * Récupérer les nouveaux messages (polling temps réel)
+     */
+    public function poll(Request $request)
+    {
+        $validated = $request->validate([
+            'conversation_id' => 'required|exists:conversations,id',
+            'last_message_id' => 'nullable|integer',
+        ]);
+
+        $user = Auth::user();
+        $conversation = Conversation::findOrFail($validated['conversation_id']);
+
+        // Vérifier l'accès
+        if (!$conversation->members->contains($user->id)) {
+            return response()->json(['error' => 'Non autorisé'], 403);
+        }
+
+        // Récupérer les nouveaux messages
+        $query = $conversation->messages()
+            ->with(['sender', 'attachments'])
+            ->where('sender_id', '!=', $user->id);
+
+        if ($validated['last_message_id']) {
+            $query->where('id', '>', $validated['last_message_id']);
+        }
+
+        $messages = $query->orderBy('created_at', 'asc')->get();
+
+        // Déchiffrer et formater
+        $messages->transform(function ($message) {
+            $message->decrypted_body = $message->decrypt();
+            $message->time_formatted = $message->created_at->format('H:i');
+            return $message;
+        });
+
+        // Marquer comme lus
+        $this->markConversationAsRead($conversation, $user->id);
+
+        return response()->json([
+            'messages' => $messages,
+            'count' => $messages->count(),
+        ]);
+    }
+
+    /**
+     * Compteur de messages non lus
+     */
+    public function unreadCount()
+    {
+        $count = MessageRecipient::where('user_id', Auth::id())
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
+    /**
+     * Supprimer un message
+     */
+    public function destroy(Message $message)
+    {
+        $user = Auth::user();
+        
+        // Seul l'expéditeur peut supprimer son message
+        if ($message->sender_id !== $user->id) {
+            return response()->json(['error' => 'Non autorisé'], 403);
+        }
+
+        // Supprimer les pièces jointes
+        foreach ($message->attachments as $attachment) {
+            Storage::disk('local')->delete($attachment->file_path);
+            $attachment->delete();
+        }
+
+        $message->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Rechercher dans les messages
+     */
+    public function search(Request $request)
+    {
+        $validated = $request->validate([
+            'q' => 'required|string|min:2',
+        ]);
+
+        $user = Auth::user();
+        $searchTerm = strtolower($validated['q']);
+
+        // Récupérer les messages des conversations de l'utilisateur
+        $messages = Message::whereHas('conversation.members', function ($query) use ($user) {
+                $query->where('users.id', $user->id);
+            })
+            ->where('sender_id', '!=', $user->id)
+            ->with(['sender', 'conversation'])
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get()
+            ->filter(function ($message) use ($searchTerm) {
+                $decrypted = strtolower($message->decrypt() ?? '');
+                return str_contains($decrypted, $searchTerm);
+            })
+            ->values();
+
+        return response()->json([
+            'results' => $messages->map(function ($message) {
+                return [
+                    'id' => $message->id,
+                    'conversation_id' => $message->conversation_id,
+                    'sender' => $message->sender->name,
+                    'content' => Str::limit($message->decrypt(), 100),
+                    'date' => $message->created_at->format('d/m/Y H:i'),
+                ];
+            })
+        ]);
     }
 }

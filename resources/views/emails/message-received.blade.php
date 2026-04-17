@@ -21,9 +21,9 @@
             overflow: hidden;
         }
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
             color: white;
-            padding: 30px 20px;
+            padding: 32px 22px;
             text-align: center;
         }
         .header h1 {
@@ -35,37 +35,45 @@
             padding: 30px 20px;
         }
         .message-info {
-            background-color: #f1f5f9;
-            border-left: 4px solid #667eea;
-            padding: 15px 20px;
-            margin: 20px 0;
-            border-radius: 4px;
+            background-color: #eef2ff;
+            border-left: 4px solid #3b82f6;
+            padding: 18px 22px;
+            margin: 22px 0;
+            border-radius: 12px;
         }
         .message-info strong {
             color: #334155;
         }
         .message-content {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-            font-style: italic;
+            background-color: #eef2ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 14px;
+            padding: 22px;
+            margin: 24px 0;
+            line-height: 1.7;
+            color: #1f2937;
         }
         .action-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            background-color: #2563eb;
+            color: #ffffff !important;
             text-decoration: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            font-weight: 600;
+            padding: 14px 34px;
+            border-radius: 999px;
+            font-weight: 700;
             text-align: center;
-            margin: 20px 0;
-            transition: transform 0.2s;
+            margin: 24px 0;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+            text-shadow: 0 0 1px rgba(255,255,255,0.85);
         }
         .action-button:hover {
+            background-color: #1d4ed8;
             transform: translateY(-1px);
+            box-shadow: 0 16px 28px rgba(37, 99, 235, 0.28);
         }
         .footer {
             background-color: #f8fafc;

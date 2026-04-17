@@ -325,6 +325,9 @@
 
         <form method="POST" action="{{ route('login') }}">
             @csrf
+            @if(request()->query('redirect'))
+                <input type="hidden" name="redirect" value="{{ request()->query('redirect') }}">
+            @endif
 
             <div class="input-group">
                 <label for="username"><i class="far fa-user-circle"></i> Identifiant</label>
