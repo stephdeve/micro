@@ -103,7 +103,7 @@ window.toggleNatRule = async function(id, enable) {
     if (!confirm(`${enable ? 'Activer' : 'Désactiver'} cette règle NAT ?`)) return;
     
     try {
-        const response = await fetch(`/routeurs/${routeurId}/firewall/nat/${id}/${enable ? 'enable' : 'disable'}`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/nat/${id}/${enable ? 'enable' : 'disable'}`, {
             method: 'POST',
             headers: { 
                 'X-CSRF-TOKEN': csrfToken,
@@ -127,7 +127,7 @@ window.deleteNatRule = async function(id) {
     if (!confirm('Supprimer définitivement cette règle NAT ?')) return;
     
     try {
-        const response = await fetch(`/routeurs/${routeurId}/firewall/nat/${id}`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/nat/${id}`, {
             method: 'DELETE',
             headers: { 
                 'X-CSRF-TOKEN': csrfToken,
@@ -162,7 +162,7 @@ window.moveNatRule = async function(id, direction) {
     if (!destinationId) return;
     
     try {
-        const response = await fetch(`/routeurs/${routeurId}/firewall/nat/${id}/move`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/nat/${id}/move`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,

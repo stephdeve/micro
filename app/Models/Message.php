@@ -38,7 +38,8 @@ class Message extends Model
     public static function getEncryptionKey(): string
     {
         if (self::$encryptionKey === null) {
-            self::$encryptionKey = env('MESSAGE_ENCRYPTION_KEY', env('APP_KEY'));
+            $key = env('MESSAGE_ENCRYPTION_KEY') ?? env('APP_KEY') ?? 'default-encryption-key-32chars-long';
+            self::$encryptionKey = $key;
         }
         return self::$encryptionKey;
     }

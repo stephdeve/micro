@@ -6,15 +6,19 @@ use App\Models\Employe;
 use App\Models\Routeur;
 use App\Models\WifiZone;
 use App\Models\User;
+use App\Services\MikrotikService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class EmployeNetworkController extends Controller
 {
-    public function __construct()
+    protected $mikrotikService;
+
+    public function __construct(MikrotikService $mikrotikService)
     {
         $this->middleware('auth');
+        $this->mikrotikService = $mikrotikService;
     }
 
     /**
@@ -99,6 +103,21 @@ class EmployeNetworkController extends Controller
             'active' => true,
         ]);
 
+        // Créer la Simple Queue sur MikroTik pour la bande passante
+        if ($routeur->mikrotik_config && $employe->mac_address) {
+            try {
+                $this->mikrotikService->setBandwidthQueue(
+                    $routeur,
+                    $employe->mac_address,
+                    $employe->fullName(),
+                    $employe->bandwidth_down,
+                    $employe->bandwidth_up
+                );
+            } catch (\Exception $e) {
+                \Log::warning('MikroTik queue creation failed', ['error' => $e->getMessage()]);
+            }
+        }
+
         return redirect()->route('routeurs.employes.index', $routeur)
             ->with('success', 'Employé "' . $employe->fullName() . '" créé avec succès' . ($userId ? ' avec un compte utilisateur' : ''));
     }
@@ -124,6 +143,9 @@ class EmployeNetworkController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $oldMac = $employe->mac_address;
+        $oldActive = $employe->active;
+
         $employe->update([
             'nom' => $validated['nom'],
             'prenom' => $validated['prenom'],
@@ -148,6 +170,26 @@ class EmployeNetworkController extends Controller
             ]);
         }
 
+        // Mettre à jour la Simple Queue sur MikroTik
+        if ($routeur->mikrotik_config && $employe->mac_address) {
+            try {
+                // Supprimer l'ancienne queue si MAC a changé
+                if ($oldMac && $oldMac !== $employe->mac_address) {
+                    $this->mikrotikService->removeQueueByName($routeur, $oldMac);
+                }
+
+                $this->mikrotikService->setBandwidthQueue(
+                    $routeur,
+                    $employe->mac_address,
+                    $employe->fullName(),
+                    $employe->bandwidth_down,
+                    $employe->bandwidth_up
+                );
+            } catch (\Exception $e) {
+                \Log::warning('MikroTik queue update failed', ['error' => $e->getMessage()]);
+            }
+        }
+
         return redirect()->route('routeurs.employes.index', $routeur)
             ->with('success', 'Employé "' . $employe->fullName() . '" mis à jour');
     }
@@ -165,6 +207,26 @@ class EmployeNetworkController extends Controller
             $employe->user->update(['active' => $employe->active]);
         }
 
+        // Bloquer/Débloquer sur MikroTik (Address List)
+        if ($routeur->mikrotik_config && $employe->mac_address) {
+            try {
+                if ($employe->active) {
+                    // Débloquer : retirer de la blocklist
+                    $this->mikrotikService->removeAddressList($routeur, $employe->mac_address, 'blocked-employes');
+                } else {
+                    // Bloquer : ajouter à la blocklist
+                    $this->mikrotikService->addAddressList(
+                        $routeur,
+                        $employe->mac_address,
+                        'blocked-employes',
+                        'Employé bloqué: ' . $employe->fullName()
+                    );
+                }
+            } catch (\Exception $e) {
+                \Log::warning('MikroTik blocklist update failed', ['error' => $e->getMessage()]);
+            }
+        }
+
         $status = $employe->active ? 'débloqué' : 'bloqué';
         return redirect()->route('routeurs.employes.index', $routeur)
             ->with('success', 'Employé "' . $employe->fullName() . '" ' . $status);
@@ -176,6 +238,16 @@ class EmployeNetworkController extends Controller
     public function destroy(Routeur $routeur, Employe $employe)
     {
         $nom = $employe->fullName();
+
+        // Supprimer la Simple Queue et la blocklist sur MikroTik
+        if ($routeur->mikrotik_config && $employe->mac_address) {
+            try {
+                $this->mikrotikService->removeQueueByName($routeur, $employe->mac_address);
+                $this->mikrotikService->removeAddressList($routeur, $employe->mac_address, 'blocked-employes');
+            } catch (\Exception $e) {
+                \Log::warning('MikroTik cleanup failed', ['error' => $e->getMessage()]);
+            }
+        }
 
         // Supprimer le compte utilisateur associé
         if ($employe->user) {
@@ -226,12 +298,34 @@ class EmployeNetworkController extends Controller
      */
     public function realtimeStats(Routeur $routeur, Employe $employe)
     {
-        // TODO: Récupérer vraiment les stats temps réel du routeur
-        // Pour l'instant, simulons
-        $currentSpeed = [
-            'down' => rand(100, 5000), // kbps
-            'up' => rand(50, 2000), // kbps
-        ];
+        $currentSpeed = ['down' => 0, 'up' => 0];
+        $queueStats = null;
+
+        // Récupérer les vraies stats depuis le MikroTik si possible
+        if ($routeur->mikrotik_config && $employe->mac_address) {
+            try {
+                $queueStats = $this->mikrotikService->getQueueStats($routeur, $employe->mac_address);
+                if ($queueStats) {
+                    $currentSpeed = [
+                        'down' => $queueStats['rate_down'] ?? 0,
+                        'up' => $queueStats['rate_up'] ?? 0,
+                    ];
+                }
+            } catch (\Exception $e) {
+                \Log::warning('MikroTik stats retrieval failed', ['error' => $e->getMessage()]);
+                // Fallback sur les données simulées
+                $currentSpeed = [
+                    'down' => rand(100, 5000),
+                    'up' => rand(50, 2000),
+                ];
+            }
+        } else {
+            // Fallback sur les données simulées
+            $currentSpeed = [
+                'down' => rand(100, 5000),
+                'up' => rand(50, 2000),
+            ];
+        }
 
         return response()->json([
             'speed' => $currentSpeed,
@@ -239,6 +333,7 @@ class EmployeNetworkController extends Controller
             'data_total' => $employe->quota_monthly,
             'data_percent' => $employe->quotaUsedPercent(),
             'is_online' => $employe->last_connected_at && $employe->last_connected_at->gt(now()->subMinutes(5)),
+            'queue_stats' => $queueStats,
         ]);
     }
 

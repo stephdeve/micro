@@ -122,7 +122,7 @@ window.toggleFilterRule = async function(id, enable) {
     if (!confirm(`${enable ? 'Activer' : 'Désactiver'} cette règle ?`)) return;
     
     try {
-        const response = await fetch(`/routeurs/${routeurId}/firewall/filter/${id}/${enable ? 'enable' : 'disable'}`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/filter/${id}/${enable ? 'enable' : 'disable'}`, {
             method: 'POST',
             headers: { 
                 'X-CSRF-TOKEN': csrfToken,
@@ -146,7 +146,7 @@ window.deleteFilterRule = async function(id) {
     if (!confirm('Supprimer définitivement cette règle ?')) return;
     
     try {
-        const response = await fetch(`/routeurs/${routeurId}/firewall/filter/${id}`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/filter/${id}`, {
             method: 'DELETE',
             headers: { 
                 'X-CSRF-TOKEN': csrfToken,
@@ -182,7 +182,7 @@ window.moveFilterRule = async function(id, direction) {
     if (!destinationId) return;
     
     try {
-        const response = await fetch(`/routeurs/${routeurId}/firewall/filter/${id}/move`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/filter/${id}/move`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,

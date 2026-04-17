@@ -324,6 +324,12 @@
         const formData = new FormData(this);
         const content = formData.get('content').trim();
         
+        // Ajouter les fichiers sélectionnés au FormData
+        selectedFiles.forEach((file, index) => {
+            formData.append('attachments[]', file);
+            console.log('Adding file:', file.name, file.size);
+        });
+        
         console.log('Content:', content, 'Files:', selectedFiles.length);
         
         if (!content && selectedFiles.length === 0) {

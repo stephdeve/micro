@@ -54,15 +54,48 @@ Route::middleware('auth')->group(function () {
         Route::post('routeurs/{routeur}/firewall', [AdminReseauController::class, 'firewallStore'])->name('firewall.store');
         Route::delete('routeurs/{routeur}/firewall/{ruleId}', [AdminReseauController::class, 'firewallDestroy'])->name('firewall.destroy');
         Route::post('routeurs/{routeur}/firewall/{ruleId}/toggle', [AdminReseauController::class, 'firewallToggle'])->name('firewall.toggle');
+        // Firewall Filter
+        Route::post('routeurs/{routeur}/firewall/filter', [MikroTikFirewallController::class, 'storeFilter'])->name('firewall.filter.store');
+        Route::put('routeurs/{routeur}/firewall/filter/{rule}', [MikroTikFirewallController::class, 'updateFilter'])->name('firewall.filter.update');
+        Route::delete('routeurs/{routeur}/firewall/filter/{rule}', [MikroTikFirewallController::class, 'destroyFilter'])->name('firewall.filter.destroy');
+        Route::post('routeurs/{routeur}/firewall/filter/{rule}/enable', [MikroTikFirewallController::class, 'toggleFilter'])->name('firewall.filter.enable')->defaults('enable', true);
+        Route::post('routeurs/{routeur}/firewall/filter/{rule}/disable', [MikroTikFirewallController::class, 'toggleFilter'])->name('firewall.filter.disable')->defaults('enable', false);
+        Route::post('routeurs/{routeur}/firewall/filter/{rule}/move', [MikroTikFirewallController::class, 'moveFilter'])->name('firewall.filter.move');
+        // Firewall NAT
+        Route::post('routeurs/{routeur}/firewall/nat', [MikroTikFirewallController::class, 'storeNat'])->name('firewall.nat.store');
+        Route::put('routeurs/{routeur}/firewall/nat/{rule}', [MikroTikFirewallController::class, 'updateNat'])->name('firewall.nat.update');
+        Route::delete('routeurs/{routeur}/firewall/nat/{rule}', [MikroTikFirewallController::class, 'destroyNat'])->name('firewall.nat.destroy');
+        Route::post('routeurs/{routeur}/firewall/nat/{rule}/enable', [MikroTikFirewallController::class, 'toggleNat'])->name('firewall.nat.enable')->defaults('enable', true);
+        Route::post('routeurs/{routeur}/firewall/nat/{rule}/disable', [MikroTikFirewallController::class, 'toggleNat'])->name('firewall.nat.disable')->defaults('enable', false);
+        Route::post('routeurs/{routeur}/firewall/nat/{rule}/move', [MikroTikFirewallController::class, 'moveNat'])->name('firewall.nat.move');
+        // Firewall Mangle
+        Route::post('routeurs/{routeur}/firewall/mangle', [MikroTikFirewallController::class, 'storeMangle'])->name('firewall.mangle.store');
+        Route::put('routeurs/{routeur}/firewall/mangle/{rule}', [MikroTikFirewallController::class, 'updateMangle'])->name('firewall.mangle.update');
+        Route::delete('routeurs/{routeur}/firewall/mangle/{rule}', [MikroTikFirewallController::class, 'destroyMangle'])->name('firewall.mangle.destroy');
+        Route::post('routeurs/{routeur}/firewall/mangle/{rule}/enable', [MikroTikFirewallController::class, 'toggleMangle'])->name('firewall.mangle.enable')->defaults('enable', true);
+        Route::post('routeurs/{routeur}/firewall/mangle/{rule}/disable', [MikroTikFirewallController::class, 'toggleMangle'])->name('firewall.mangle.disable')->defaults('enable', false);
+        Route::post('routeurs/{routeur}/firewall/mangle/{rule}/move', [MikroTikFirewallController::class, 'moveMangle'])->name('firewall.mangle.move');
 
         // WiFi
         Route::get('routeurs/{routeur}/wifi', [AdminReseauController::class, 'wifiIndex'])->name('wifi');
         Route::post('routeurs/{routeur}/wifi/ssid', [AdminReseauController::class, 'wifiUpdateSsid'])->name('wifi.ssid');
+        // WiFi Zones
+        Route::get('routeurs/{routeur}/wifi-zones', [WifiZoneController::class, 'index'])->name('wifi-zones');
+        Route::post('routeurs/{routeur}/wifi-zones', [WifiZoneController::class, 'store'])->name('wifi-zones.store');
+        Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/show', [WifiZoneController::class, 'show'])->name('wifi-zones.show');
+        Route::put('routeurs/{routeur}/wifi-zones/{wifiZone}', [WifiZoneController::class, 'update'])->name('wifi-zones.update');
+        Route::delete('routeurs/{routeur}/wifi-zones/{wifiZone}', [WifiZoneController::class, 'destroy'])->name('wifi-zones.destroy');
+        Route::post('routeurs/{routeur}/wifi-zones/{wifiZone}/toggle', [WifiZoneController::class, 'toggle'])->name('wifi-zones.toggle');
+        Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/clients', [WifiZoneController::class, 'refreshClients'])->name('wifi-zones.clients');
 
         // Routes (IP)
         Route::get('routeurs/{routeur}/routes', [AdminReseauController::class, 'routesIndex'])->name('routes');
+        Route::post('routeurs/{routeur}/routes/sync', [AdminReseauController::class, 'routesSync'])->name('routes.sync');
         Route::post('routeurs/{routeur}/routes', [AdminReseauController::class, 'routesStore'])->name('routes.store');
+        Route::put('routeurs/{routeur}/routes/{routeId}', [AdminReseauController::class, 'routesUpdate'])->name('routes.update');
         Route::delete('routeurs/{routeur}/routes/{routeId}', [AdminReseauController::class, 'routesDestroy'])->name('routes.destroy');
+        Route::post('routeurs/{routeur}/routes/{routeId}/enable', [AdminReseauController::class, 'routesEnable'])->name('routes.enable');
+        Route::post('routeurs/{routeur}/routes/{routeId}/disable', [AdminReseauController::class, 'routesDisable'])->name('routes.disable');
 
         // Bande passante
         Route::get('routeurs/{routeur}/bandwidth', [AdminReseauController::class, 'bandwidthIndex'])->name('bandwidth');

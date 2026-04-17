@@ -32,14 +32,17 @@ $default  = collect($routes)->firstWhere('dst_address', '0.0.0.0/0');
         <span class="inline-block w-2 h-2 rounded-full {{ $routeur->statut === 'en_ligne' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400' }} mr-1"></span>
         {{ $routeur->statut === 'en_ligne' ? 'En ligne' : 'Hors ligne' }}
       </span>
-      <button id="syncBtn" onclick="syncRoutes()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-cyan-500/50 rounded-xl text-sm transition flex items-center gap-2">
+      <button id="syncBtn" type="button" onclick="syncRoutes()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-cyan-500/50 rounded-xl text-sm transition flex items-center gap-2">
         <i class="fas fa-sync" id="syncIcon"></i> Synchroniser
       </button>
-      <button onclick="openAddModal()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 rounded-xl text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+      <button type="button" onclick="openAddModal()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 rounded-xl text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
         <i class="fas fa-plus"></i> Ajouter route
       </button>
       <a href="{{ route('routeurs.show', $routeur) }}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-sm transition flex items-center gap-2">
         <i class="fas fa-arrow-left"></i> Retour
+      </a>
+      <a href="{{ route('admin-reseau.dhcp', $routeur->id) }}" class="px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-all border border-cyan-500/30 inline-flex items-center gap-2">
+        <i class="fas fa-server"></i> DHCP
       </a>
     </div>
   </div>
@@ -263,8 +266,8 @@ $default  = collect($routes)->firstWhere('dst_address', '0.0.0.0/0');
       </div>
     </div>
     <div class="modal-ftr">
-      <button onclick="closeModal()" class="btn-cancel">Annuler</button>
-      <button id="saveBtn" onclick="saveRoute()" class="btn-save"><i class="fas fa-check mr-1"></i>Enregistrer</button>
+      <button type="button" onclick="closeModal()" class="btn-cancel">Annuler</button>
+      <button type="button" id="saveBtn" onclick="saveRoute()" class="btn-save"><i class="fas fa-check mr-1"></i>Enregistrer</button>
     </div>
   </div>
 </div>
@@ -293,7 +296,8 @@ $default  = collect($routes)->firstWhere('dst_address', '0.0.0.0/0');
 
 <script>
 const routeurId = {{ $routeur->id }};
-const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
+const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+const BASE_URL = '{{ url('') }}';
 
 function toast(msg, type = 'success') {
   const t = document.getElementById('toast');
@@ -317,7 +321,7 @@ async function syncRoutes() {
   const icon = document.getElementById('syncIcon');
   btn.disabled = true; icon.className = 'fas fa-spinner fa-spin';
   try {
-    const r = await fetch(`/routeurs/${routeurId}/routes/sync`, {
+    const r = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes/sync`, {
       method:'POST', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}
     });
     const d = await r.json();
@@ -373,12 +377,18 @@ async function saveRoute() {
   const config = {dst_address:dst, gateway:gw, distance:parseInt(dist)||1, check_gateway:cgw, comment:cm};
 
   try {
-    const url    = id ? `/routeurs/${routeurId}/routes/${id}` : `/routeurs/${routeurId}/routes`;
+    const url    = id ? `${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes/${id}` : `${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes`;
     const method = id ? 'PUT' : 'POST';
     const r = await fetch(url, {
       method, headers:{'X-CSRF-TOKEN':CSRF,'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify(config)
     });
+    if (!r.ok) {
+      const text = await r.text();
+      let errMsg = 'Échec';
+      try { const j = JSON.parse(text); errMsg = j.message || Object.values(j.errors||{}).flat().join(' ') || errMsg; } catch(_){ errMsg = text.substring(0,200); }
+      throw new Error(errMsg);
+    }
     const d = await r.json();
     if (d.success) { closeModal(); toast(d.message,'success'); setTimeout(()=>location.reload(),900); }
     else toast('Erreur : '+(d.message||'Échec'),'error');
@@ -390,7 +400,7 @@ async function saveRoute() {
 async function toggleRoute(id, enable) {
   if (!confirm(`${enable?'Activer':'Désactiver'} cette route ?`)) return;
   try {
-    const r = await fetch(`/routeurs/${routeurId}/routes/${id}/${enable?'enable':'disable'}`, {
+    const r = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes/${id}/${enable?'enable':'disable'}`, {
       method:'POST', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}
     });
     const d = await r.json();
@@ -403,7 +413,7 @@ async function toggleRoute(id, enable) {
 async function deleteRoute(id) {
   if (!confirm('Supprimer définitivement cette route ?')) return;
   try {
-    const r = await fetch(`/routeurs/${routeurId}/routes/${id}`, {
+    const r = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes/${id}`, {
       method:'DELETE', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}
     });
     const d = await r.json();

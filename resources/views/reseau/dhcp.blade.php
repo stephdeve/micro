@@ -221,8 +221,8 @@
             </div>
         </div>
         <div class="px-4 py-3 border-t border-slate-700 flex justify-end gap-2">
-            <button onclick="closeServerModal()" class="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-sm">Annuler</button>
-            <button onclick="saveServer()" class="px-3 py-1.5 rounded bg-cyan-500 hover:bg-cyan-600 text-white text-sm">Créer</button>
+            <button type="button" onclick="closeServerModal()" class="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-sm">Annuler</button>
+            <button type="button" onclick="saveServer()" class="px-3 py-1.5 rounded bg-cyan-500 hover:bg-cyan-600 text-white text-sm">Créer</button>
         </div>
     </div>
 </div>
@@ -233,7 +233,7 @@
     <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md relative z-10">
         <div class="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
             <h3 class="text-lg font-bold text-white">Ajouter Réseau DHCP</h3>
-            <button onclick="closeNetworkModal()" class="text-slate-400 hover:text-white">
+            <button type="button" onclick="closeNetworkModal()" class="text-slate-400 hover:text-white">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -256,8 +256,8 @@
             </div>
         </div>
         <div class="px-4 py-3 border-t border-slate-700 flex justify-end gap-2">
-            <button onclick="closeNetworkModal()" class="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-sm">Annuler</button>
-            <button onclick="saveNetwork()" class="px-3 py-1.5 rounded bg-cyan-500 hover:bg-cyan-600 text-white text-sm">Créer</button>
+            <button type="button" onclick="closeNetworkModal()" class="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-sm">Annuler</button>
+            <button type="button" onclick="saveNetwork()" class="px-3 py-1.5 rounded bg-cyan-500 hover:bg-cyan-600 text-white text-sm">Créer</button>
         </div>
     </div>
 </div>
@@ -265,6 +265,7 @@
 <script>
 const routeurId = {{ $routeur->id }};
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+const BASE_URL = '{{ url('') }}';
 
 if (!csrfToken) {
     console.error('CSRF Token not found!');
@@ -311,7 +312,7 @@ async function saveServer() {
     }
     
     try {
-        const response = await fetch(`/admin-reseau/routeurs/${routeurId}/dhcp/servers`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/dhcp/servers`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
@@ -347,7 +348,7 @@ async function saveServer() {
 async function deleteServer(id) {
     if (!confirm('Supprimer ce serveur DHCP ?')) return;
     try {
-        const response = await fetch(`/admin-reseau/routeurs/${routeurId}/dhcp/servers/${id}`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/dhcp/servers/${id}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
@@ -395,7 +396,7 @@ async function saveNetwork() {
     }
     
     try {
-        const response = await fetch(`/admin-reseau/routeurs/${routeurId}/dhcp/networks`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/dhcp/networks`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
@@ -431,7 +432,7 @@ async function saveNetwork() {
 async function deleteNetwork(id) {
     if (!confirm('Supprimer ce réseau DHCP ?')) return;
     try {
-        const response = await fetch(`/admin-reseau/routeurs/${routeurId}/dhcp/networks/${id}`, {
+        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/dhcp/networks/${id}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,

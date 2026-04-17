@@ -193,25 +193,143 @@ class AdminReseauController extends Controller
 
     public function routesStore(Request $request, Routeur $routeur)
     {
-        $data = $request->validate([
-            'dst_address' => 'required|string',
-            'gateway' => 'required|string',
-            'distance' => 'nullable|integer',
-            'comment' => 'nullable|string|max:255',
-        ]);
+        try {
+            $data = $request->validate([
+                'dst_address' => 'required|string',
+                'gateway' => 'required|string',
+                'distance' => 'nullable|integer',
+                'comment' => 'nullable|string|max:255',
+                'check_gateway' => 'nullable|string',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
-        $service = app(MikrotikService::class);
-        $ok = $service->addRoute($routeur, $data);
+        try {
+            $service = app(MikrotikService::class);
+            $ok = $service->addRoute($routeur, $data);
 
-        return response()->json(['success' => $ok]);
+            return response()->json([
+                'success' => $ok,
+                'message' => $ok ? 'Route ajoutée avec succès' : 'Échec de l\'ajout de la route'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function routesSync(Routeur $routeur)
+    {
+        try {
+            $service = app(MikrotikService::class);
+            $routes = $service->getRoutes($routeur);
+
+            return response()->json([
+                'success' => true,
+                'message' => count($routes) . ' routes récupérées',
+                'routes' => $routes
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function routesUpdate(Request $request, Routeur $routeur, string $routeId)
+    {
+        try {
+            $data = $request->validate([
+                'dst_address' => 'nullable|string',
+                'gateway' => 'nullable|string',
+                'distance' => 'nullable|integer',
+                'comment' => 'nullable|string|max:255',
+                'check_gateway' => 'nullable|string',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        try {
+            $service = app(MikrotikService::class);
+            $ok = $service->updateRoute($routeur, $routeId, array_filter($data, fn($v) => $v !== null));
+
+            return response()->json([
+                'success' => $ok,
+                'message' => $ok ? 'Route modifiée avec succès' : 'Échec de la modification'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function routesDestroy(Routeur $routeur, string $routeId)
     {
-        $service = app(MikrotikService::class);
-        $ok = $service->removeRoute($routeur, $routeId);
+        try {
+            $service = app(MikrotikService::class);
+            $ok = $service->removeRoute($routeur, $routeId);
 
-        return response()->json(['success' => $ok]);
+            return response()->json([
+                'success' => $ok,
+                'message' => $ok ? 'Route supprimée' : 'Échec de la suppression'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function routesEnable(Routeur $routeur, string $routeId)
+    {
+        try {
+            $service = app(MikrotikService::class);
+            $ok = $service->enableRoute($routeur, $routeId);
+
+            return response()->json([
+                'success' => $ok,
+                'message' => $ok ? 'Route activée' : 'Échec de l\'activation'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function routesDisable(Routeur $routeur, string $routeId)
+    {
+        try {
+            $service = app(MikrotikService::class);
+            $ok = $service->disableRoute($routeur, $routeId);
+
+            return response()->json([
+                'success' => $ok,
+                'message' => $ok ? 'Route désactivée' : 'Échec de la désactivation'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // ===== BANDE PASSANTE =====

@@ -190,17 +190,17 @@ const initTrafficChart = () => {
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: {{ json_encode($traficGlobal->pluck('date')->map(fn($d)=>date('d/m',strtotime($d))) ?? []) }},
+            labels: {!! json_encode($traficGlobal->pluck('date')->map(fn($d)=>date('d/m',strtotime($d))) ?? []) !!},
             datasets: [{
                 label: 'Download',
-                data: {{ json_encode($traficGlobal->pluck('download') ?? [500,800,600,900,1200,1000,1100]) }},
+                data: {!! json_encode($traficGlobal->pluck('download') ?? [500,800,600,900,1200,1000,1100]) !!},
                 borderColor: '#06b6d4',
                 backgroundColor: 'rgba(6,182,212,0.1)',
                 fill: true,
                 tension: 0.4
             }, {
                 label: 'Upload',
-                data: {{ json_encode($traficGlobal->pluck('upload') ?? [200,300,250,400,350,300,400]) }},
+                data: {!! json_encode($traficGlobal->pluck('upload') ?? [200,300,250,400,350,300,400]) !!},
                 borderColor: '#8b5cf6',
                 backgroundColor: 'rgba(139,92,246,0.1)',
                 fill: true,
@@ -220,6 +220,7 @@ const initTrafficChart = () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     init3DNetwork();
+    
     initTrafficChart();
 });
 </script>

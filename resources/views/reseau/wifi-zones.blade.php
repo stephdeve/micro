@@ -188,7 +188,7 @@
         </div>
 
         <!-- Form -->
-        <form id="zoneForm" method="POST" action="{{ route('routeurs.wifi-zones.store', $routeur) }}" class="flex flex-col flex-1 overflow-hidden">
+        <form id="zoneForm" method="POST" action="{{ route('admin-reseau.wifi-zones.store', $routeur) }}" class="flex flex-col flex-1 overflow-hidden">
             @csrf
             <input type="hidden" id="method" value="POST">
             <input type="hidden" id="zoneId" name="zone_id">
@@ -390,6 +390,7 @@
 </style>
 
 <script>
+    const BASE_URL = '{{ url('') }}';
     function openModal(mode, zoneId = null) {
         const modal = document.getElementById('zoneModal');
         const form = document.getElementById('zoneForm');
@@ -397,10 +398,10 @@
 
         if (mode === 'edit' && zoneId) {
             title.innerHTML = '<i class="fas fa-edit"></i> Modifier Zone WiFi';
-            form.action = `/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}`;
+            form.action = `${BASE_URL}/admin-reseau/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}`;
             document.getElementById('method').value = 'PUT';
             // Charger les données de la zone
-            fetch(`/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/show`)
+            fetch(`${BASE_URL}/admin-reseau/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/show`)
                 .then(r => r.json())
                 .then(data => {
                     document.getElementById('zoneId').value = data.zone.id;
@@ -426,7 +427,7 @@
                 });
         } else {
             title.innerHTML = '<i class="fas fa-wifi"></i> Nouvelle Zone WiFi';
-            form.action = '{{ route('routeurs.wifi-zones.store', $routeur) }}';
+            form.action = '{{ route('admin-reseau.wifi-zones.store', $routeur) }}';
             form.reset();
             document.getElementById('method').value = 'POST';
             document.getElementById('zoneId').value = '';
@@ -477,7 +478,7 @@
     }
 
     function toggleZone(zoneId) {
-        fetch(`/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/toggle`, {
+        fetch(`${BASE_URL}/admin-reseau/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/toggle`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -501,7 +502,7 @@
             return;
         }
 
-        fetch(`/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}`, {
+        fetch(`${BASE_URL}/admin-reseau/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,

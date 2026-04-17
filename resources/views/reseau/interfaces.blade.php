@@ -282,6 +282,7 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
 const ROUTEUR_ID = {{ $routeur->id }};
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
 const IS_ONLINE = {{ $routeur->statut === 'en_ligne' ? 'true' : 'false' }};
+const BASE_URL = '{{ url('') }}';
 
 // ===== TOAST =====
 function toast(msg, type = 'success') {
@@ -301,7 +302,7 @@ async function syncInterfaces() {
   btn.disabled = true;
   icon.className = 'fas fa-spinner fa-spin';
   try {
-    const r = await fetch(`/routeurs/${ROUTEUR_ID}/interfaces/sync`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/sync`, {
       method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
     });
     const d = await r.json();
@@ -315,7 +316,7 @@ async function syncInterfaces() {
 async function toggleIface(apiId, name, enable) {
   if (!confirm(`${enable ? 'Activer' : 'Désactiver'} l'interface ${name} ?`)) return;
   try {
-    const r = await fetch(`/routeurs/${ROUTEUR_ID}/interfaces/${apiId}/${enable ? 'enable' : 'disable'}`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${apiId}/${enable ? 'enable' : 'disable'}`, {
       method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ name })
     });
@@ -350,7 +351,7 @@ async function confirmRename() {
   const nw = document.getElementById('renameNew').value.trim();
   if (!nw) { toast('Nom invalide', 'error'); return; }
   try {
-    const r = await fetch(`/routeurs/${ROUTEUR_ID}/interfaces/${id}/rename`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${id}/rename`, {
       method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ name: nw, old_name: old })
     });
@@ -371,7 +372,7 @@ async function confirmConfigure() {
   const l2mtu = document.getElementById('configL2mtu').value;
   const comment = document.getElementById('configComment').value;
   try {
-    const r = await fetch(`/routeurs/${ROUTEUR_ID}/interfaces/${id}/configure`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${id}/configure`, {
       method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ mtu, l2mtu, comment })
     });
@@ -395,7 +396,7 @@ async function confirmIp() {
   const network = document.getElementById('ipNetwork').value.trim();
   if (!ip.match(/^\d+\.\d+\.\d+\.\d+\/\d+$/)) { toast('Format invalide — utilisez 192.168.1.1/24', 'error'); return; }
   try {
-    const r = await fetch(`/routeurs/${ROUTEUR_ID}/interfaces/${encodeURIComponent(name)}/ip`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${encodeURIComponent(name)}/ip`, {
       method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ ip, network: network || undefined })
     });
@@ -411,7 +412,7 @@ async function openDetails(apiId, name) {
   document.getElementById('detailsContent').innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin mr-2"></i>Chargement...</div>';
   openModal('modalDetails');
   try {
-    const r = await fetch(`/routeurs/${ROUTEUR_ID}/interfaces/${apiId}/details`, { headers: { 'Accept': 'application/json' } });
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${apiId}/details`, { headers: { 'Accept': 'application/json' } });
     const d = await r.json();
     if (d.success) {
       const i = d.interface;
@@ -477,7 +478,7 @@ async function pollAllInterfaces() {
     const name = card.dataset.name;
     if (!name || !charts[name]) continue;
     try {
-      const r = await fetch(`/routeurs/${ROUTEUR_ID}/interfaces/${encodeURIComponent(name)}/realtime`, { headers: { 'Accept': 'application/json' } });
+      const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${encodeURIComponent(name)}/realtime`, { headers: { 'Accept': 'application/json' } });
       const d = await r.json();
       if (!d.success) continue;
 

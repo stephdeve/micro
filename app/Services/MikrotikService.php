@@ -807,6 +807,7 @@ class MikrotikService
 
             if (!empty($data['distance'])) $req->setArgument('distance', $data['distance']);
             if (!empty($data['comment'])) $req->setArgument('comment', $data['comment']);
+            if (!empty($data['check_gateway'])) $req->setArgument('check-gateway', $data['check_gateway']);
 
             $client->sendSync($req);
             return true;
@@ -1660,6 +1661,89 @@ class MikrotikService
             return true;
         } catch (\Throwable $e) {
             Log::error('Mikrotik setBandwidthQueue failed', ['routeur_id' => $routeur->id, 'queue' => $queueName, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Récupérer les statistiques d'une Simple Queue par nom
+     */
+    public function getQueueStats(Routeur $routeur, string $queueName): ?array
+    {
+        try {
+            $client = $this->client($routeur);
+
+            $req = new Request('/queue/simple/print');
+            $req->setQuery('?name=' . $queueName);
+            $resp = $client->sendSync($req);
+
+            foreach ($resp as $item) {
+                if (! $item instanceof \PEAR2\Net\RouterOS\Response) continue;
+
+                $bytes = $item->getProperty('bytes');
+                $packets = $item->getProperty('packets');
+                $rate = $item->getProperty('rate');
+
+                // Parse bytes (format: "upload/download")
+                $bytesParts = explode('/', $bytes ?? '0/0');
+                $packetsParts = explode('/', $packets ?? '0/0');
+                $rateParts = explode('/', $rate ?? '0/0');
+
+                return [
+                    'id' => $item->getProperty('.id'),
+                    'name' => $item->getProperty('name'),
+                    'target' => $item->getProperty('target'),
+                    'max_limit' => $item->getProperty('max-limit'),
+                    'bytes_up' => (int) ($bytesParts[0] ?? 0),
+                    'bytes_down' => (int) ($bytesParts[1] ?? 0),
+                    'packets_up' => (int) ($packetsParts[0] ?? 0),
+                    'packets_down' => (int) ($packetsParts[1] ?? 0),
+                    'rate_up' => (int) ($rateParts[0] ?? 0),
+                    'rate_down' => (int) ($rateParts[1] ?? 0),
+                    'disabled' => $item->getProperty('disabled') === 'true',
+                ];
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik getQueueStats failed', ['routeur_id' => $routeur->id, 'queue' => $queueName, 'error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
+     * Supprimer une Simple Queue par son nom
+     */
+    public function removeQueueByName(Routeur $routeur, string $queueName): bool
+    {
+        try {
+            $client = $this->client($routeur);
+
+            // Trouver l'ID de la queue
+            $req = new Request('/queue/simple/print');
+            $req->setQuery('?name=' . $queueName);
+            $resp = $client->sendSync($req);
+
+            $queueId = null;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $queueId = $item->getProperty('.id');
+                    break;
+                }
+            }
+
+            if (!$queueId) {
+                return true; // Queue n'existe pas, considéré comme succès
+            }
+
+            // Supprimer la queue
+            $req = new Request('/queue/simple/remove');
+            $req->setArgument('numbers', $queueId);
+            $client->sendSync($req);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik removeQueueByName failed', ['routeur_id' => $routeur->id, 'queue' => $queueName, 'error' => $e->getMessage()]);
             return false;
         }
     }

@@ -56,13 +56,21 @@ class MikroTikRouteController extends Controller
      */
     public function store(Request $request, Routeur $routeur)
     {
-        $request->validate([
-            'dst_address' => 'required|string|regex:/^\d+\.\d+\.\d+\.\d+\/\d+$/',
-            'gateway' => 'required|ip',
-            'distance' => 'nullable|integer|min:1|max:255',
-            'comment' => 'nullable|string|max:255',
-            'check_gateway' => 'nullable|in:ping,arp,none',
-        ]);
+        try {
+            $validated = $request->validate([
+                'dst_address' => 'required|string|regex:/^\d+\.\d+\.\d+\.\d+\/\d+$/',
+                'gateway' => 'required|ip',
+                'distance' => 'nullable|integer|min:1|max:255',
+                'comment' => 'nullable|string|max:255',
+                'check_gateway' => 'nullable|in:ping,arp,none',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
         $config = [
             'dst_address' => $request->input('dst_address'),
@@ -92,13 +100,21 @@ class MikroTikRouteController extends Controller
      */
     public function update(Request $request, Routeur $routeur, string $routeId)
     {
-        $request->validate([
-            'dst_address' => 'nullable|string|regex:/^\d+\.\d+\.\d+\.\d+\/\d+$/',
-            'gateway' => 'nullable|ip',
-            'distance' => 'nullable|integer|min:1|max:255',
-            'comment' => 'nullable|string|max:255',
-            'check_gateway' => 'nullable|in:ping,arp,none',
-        ]);
+        try {
+            $validated = $request->validate([
+                'dst_address' => 'nullable|string|regex:/^\d+\.\d+\.\d+\.\d+\/\d+$/',
+                'gateway' => 'nullable|ip',
+                'distance' => 'nullable|integer|min:1|max:255',
+                'comment' => 'nullable|string|max:255',
+                'check_gateway' => 'nullable|in:ping,arp,none',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
         $config = array_filter([
             'dst_address' => $request->input('dst_address'),
