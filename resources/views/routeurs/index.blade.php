@@ -229,16 +229,16 @@ $statusLabels = [
                     <a href="{{ route('routeurs.show', $routeur) }}" class="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-center transition">
                         <i class="fas fa-eye mr-1"></i> Détails
                     </a>
-                    <a href="{{ route('routeurs.interfaces', $routeur) }}" class="px-3 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 rounded-lg text-sm transition" title="Interfaces">
+                    <a href="{{ route('admin-reseau.interfaces', $routeur) }}" class="px-3 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 rounded-lg text-sm transition" title="Interfaces">
                         <i class="fas fa-ethernet"></i>
                     </a>
-                    <a href="{{ route('routeurs.routes', $routeur) }}" class="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg text-sm transition" title="Routes">
+                    <a href="{{ route('admin-reseau.routes', $routeur) }}" class="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg text-sm transition" title="Routes">
                         <i class="fas fa-route"></i>
                     </a>
-                    <a href="{{ route('routeurs.firewall', $routeur) }}" class="px-3 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg text-sm transition" title="Firewall">
+                    <a href="{{ route('admin-reseau.firewall', $routeur) }}" class="px-3 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg text-sm transition" title="Firewall">
                         <i class="fas fa-shield-alt"></i>
                     </a>
-                    <a href="{{ route('routeurs.wifi-zones', $routeur) }}" class="px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-sm transition" title="WiFi">
+                    <a href="{{ route('admin-reseau.wifi-zones', $routeur) }}" class="px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-sm transition" title="WiFi">
                         <i class="fas fa-wifi"></i>
                     </a>
                 </div>
@@ -307,7 +307,7 @@ $statusLabels = [
                                 <button onclick="editRouteur({{ $routeur->id }})" class="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition" title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <a href="{{ route('routeurs.interfaces', $routeur) }}" class="p-2 hover:bg-indigo-500/20 rounded-lg text-indigo-400 transition" title="Interfaces">
+                                <a href="{{ route('admin-reseau.interfaces', $routeur) }}" class="p-2 hover:bg-indigo-500/20 rounded-lg text-indigo-400 transition" title="Interfaces">
                                     <i class="fas fa-ethernet"></i>
                                 </a>
                                 <button onclick="deleteRouteur({{ $routeur->id }})" class="p-2 hover:bg-rose-500/20 rounded-lg text-slate-400 hover:text-rose-400 transition" title="Supprimer">

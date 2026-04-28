@@ -168,22 +168,22 @@ $default  = collect($routes)->firstWhere('dst_address', '0.0.0.0/0');
               <div class="flex items-center justify-center gap-1.5">
                 @if(!$isDynamic && !$isConnect)
                   @if($isDisabled)
-                    <button onclick="toggleRoute('{{ $route['id'] ?? '' }}', true)" title="Activer"
+                    <button type="button" onclick="toggleRoute('{{ $route['id'] ?? '' }}', true)" title="Activer"
                       class="w-8 h-8 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 transition flex items-center justify-center">
                       <i class="fas fa-play text-xs"></i>
                     </button>
                   @else
-                    <button onclick="toggleRoute('{{ $route['id'] ?? '' }}', false)" title="Désactiver"
+                    <button type="button" onclick="toggleRoute('{{ $route['id'] ?? '' }}', false)" title="Désactiver"
                       class="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 transition flex items-center justify-center">
                       <i class="fas fa-pause text-xs"></i>
                     </button>
                   @endif
-                  <button onclick="editRoute('{{ $route['id'] ?? '' }}','{{ addslashes($route['dst_address'] ?? '') }}','{{ addslashes($route['gateway'] ?? '') }}','{{ $route['distance'] ?? 1 }}','{{ addslashes($route['comment'] ?? '') }}')"
+                  <button type="button" onclick="editRoute('{{ $route['id'] ?? '' }}','{{ addslashes($route['dst_address'] ?? '') }}','{{ addslashes($route['gateway'] ?? '') }}','{{ $route['distance'] ?? 1 }}','{{ addslashes($route['comment'] ?? '') }}')"
                     title="Modifier"
                     class="w-8 h-8 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition flex items-center justify-center">
                     <i class="fas fa-edit text-xs"></i>
                   </button>
-                  <button onclick="deleteRoute('{{ $route['id'] ?? '' }}')" title="Supprimer"
+                  <button type="button" onclick="deleteRoute('{{ $route['id'] ?? '' }}')" title="Supprimer"
                     class="w-8 h-8 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 transition flex items-center justify-center">
                     <i class="fas fa-trash text-xs"></i>
                   </button>
@@ -200,7 +200,7 @@ $default  = collect($routes)->firstWhere('dst_address', '0.0.0.0/0');
                 <i class="fas fa-route text-slate-600 text-2xl"></i>
               </div>
               <p class="text-slate-400 mb-2">Aucune route configurée</p>
-              <button onclick="openAddModal()" class="px-4 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm hover:bg-emerald-500/30 transition">
+              <button type="button" onclick="openAddModal()" class="px-4 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm hover:bg-emerald-500/30 transition">
                 <i class="fas fa-plus mr-2"></i>Ajouter une route statique
               </button>
             </td>
@@ -232,7 +232,7 @@ $default  = collect($routes)->firstWhere('dst_address', '0.0.0.0/0');
     <div class="modal-hdr">
       <span class="modal-icon bg-cyan-500/20 text-cyan-400"><i class="fas fa-route"></i></span>
       <h3 id="modalTitle">Ajouter une route statique</h3>
-      <button onclick="closeModal()" class="modal-close">&times;</button>
+      <button type="button" onclick="closeModal()" class="modal-close">&times;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="routeId">
@@ -297,7 +297,7 @@ $default  = collect($routes)->firstWhere('dst_address', '0.0.0.0/0');
 <script>
 const routeurId = {{ $routeur->id }};
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-const BASE_URL = '{{ url('') }}';
+const BASE_URL = '{{ url('admin-reseau') }}';
 
 function toast(msg, type = 'success') {
   const t = document.getElementById('toast');
@@ -321,7 +321,7 @@ async function syncRoutes() {
   const icon = document.getElementById('syncIcon');
   btn.disabled = true; icon.className = 'fas fa-spinner fa-spin';
   try {
-    const r = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes/sync`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${routeurId}/routes/sync`, {
       method:'POST', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}
     });
     const d = await r.json();
@@ -360,8 +360,15 @@ function editRoute(id,dst,gw,dist,cm) {
 }
 document.getElementById('routeModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 
+// Prevent Enter key from submitting
+['dstAddress','gateway','distance','checkGateway','comment'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('keypress',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveRoute(); }});
+});
+
 // Save
 async function saveRoute() {
+  console.log('saveRoute() called');
   const btn = document.getElementById('saveBtn');
   const id  = document.getElementById('routeId').value;
   const dst = document.getElementById('dstAddress').value.trim();
@@ -370,6 +377,8 @@ async function saveRoute() {
   const cgw = document.getElementById('checkGateway').value;
   const cm  = document.getElementById('comment').value;
 
+  console.log('Values:', {id, dst, gw, dist, cgw, cm});
+
   if (!dst.match(/^\d+\.\d+\.\d+\.\d+\/\d+$/)) { toast('Format destination invalide — ex: 192.168.20.0/24','error'); return; }
   if (!gw.match(/^\d+\.\d+\.\d+\.\d+$/))        { toast('Passerelle invalide — ex: 192.168.1.254','error'); return; }
 
@@ -377,7 +386,7 @@ async function saveRoute() {
   const config = {dst_address:dst, gateway:gw, distance:parseInt(dist)||1, check_gateway:cgw, comment:cm};
 
   try {
-    const url    = id ? `${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes/${id}` : `${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes`;
+    const url    = id ? `${BASE_URL}/routeurs/${routeurId}/routes/${encodeURIComponent(id)}` : `${BASE_URL}/routeurs/${routeurId}/routes`;
     const method = id ? 'PUT' : 'POST';
     const r = await fetch(url, {
       method, headers:{'X-CSRF-TOKEN':CSRF,'Content-Type':'application/json','Accept':'application/json'},
@@ -390,6 +399,7 @@ async function saveRoute() {
       throw new Error(errMsg);
     }
     const d = await r.json();
+    console.log('saveRoute response:', d);
     if (d.success) { closeModal(); toast(d.message,'success'); setTimeout(()=>location.reload(),900); }
     else toast('Erreur : '+(d.message||'Échec'),'error');
   } catch(e){ toast('Erreur : '+e.message,'error'); }
@@ -400,7 +410,7 @@ async function saveRoute() {
 async function toggleRoute(id, enable) {
   if (!confirm(`${enable?'Activer':'Désactiver'} cette route ?`)) return;
   try {
-    const r = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes/${id}/${enable?'enable':'disable'}`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${routeurId}/routes/${encodeURIComponent(id)}/${enable?'enable':'disable'}`, {
       method:'POST', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}
     });
     const d = await r.json();
@@ -413,7 +423,7 @@ async function toggleRoute(id, enable) {
 async function deleteRoute(id) {
   if (!confirm('Supprimer définitivement cette route ?')) return;
   try {
-    const r = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/routes/${id}`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${routeurId}/routes/${encodeURIComponent(id)}`, {
       method:'DELETE', headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}
     });
     const d = await r.json();

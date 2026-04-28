@@ -115,13 +115,14 @@ class AdminReseauController extends Controller
     }
 
     // ===== FIREWALL =====
-    public function firewallIndex(Routeur $routeur)
+    public function firewallIndex(Routeur $routeur, Request $request)
     {
         $service = app(MikrotikService::class);
+        $tab = $request->input('tab', 'filter');
         $rules = $service->getFirewallRules($routeur);
         $natRules = $service->getNatRules($routeur);
 
-        return view('reseau.firewall', compact('routeur', 'rules', 'natRules'));
+        return view('reseau.firewall', compact('routeur', 'tab', 'rules', 'natRules'));
     }
 
     public function firewallStore(Request $request, Routeur $routeur)
@@ -397,13 +398,14 @@ class AdminReseauController extends Controller
             'name' => 'required|string',
             'interface' => 'required|string',
             'address_pool' => 'required|string',
+            'pool_range' => 'required|string',
             'lease_time' => 'nullable|string',
         ]);
 
         $service = app(MikrotikService::class);
-        $ok = $service->addDhcpServer($routeur, $data);
+        $result = $service->addDhcpServer($routeur, $data);
 
-        return response()->json(['success' => $ok, 'message' => $ok ? 'Serveur créé' : 'Échec']);
+        return response()->json($result);
     }
 
     public function dhcpDestroyServer(Routeur $routeur, string $serverId)
@@ -412,6 +414,22 @@ class AdminReseauController extends Controller
         $ok = $service->removeDhcpServer($routeur, $serverId);
 
         return response()->json(['success' => $ok]);
+    }
+
+    public function dhcpEnableServer(Routeur $routeur, string $serverId)
+    {
+        $service = app(MikrotikService::class);
+        $ok = $service->enableDhcpServer($routeur, $serverId);
+
+        return response()->json(['success' => $ok, 'message' => $ok ? 'Serveur activé' : 'Échec']);
+    }
+
+    public function dhcpDisableServer(Routeur $routeur, string $serverId)
+    {
+        $service = app(MikrotikService::class);
+        $ok = $service->disableDhcpServer($routeur, $serverId);
+
+        return response()->json(['success' => $ok, 'message' => $ok ? 'Serveur désactivé' : 'Échec']);
     }
 
     public function dhcpStoreNetwork(Request $request, Routeur $routeur)
@@ -424,15 +442,38 @@ class AdminReseauController extends Controller
         ]);
 
         $service = app(MikrotikService::class);
-        $ok = $service->addDhcpNetwork($routeur, $data);
+        $result = $service->addDhcpNetwork($routeur, $data);
 
-        return response()->json(['success' => $ok, 'message' => $ok ? 'Réseau créé' : 'Échec']);
+        return response()->json($result);
     }
 
     public function dhcpDestroyNetwork(Routeur $routeur, string $networkId)
     {
         $service = app(MikrotikService::class);
         $ok = $service->removeDhcpNetwork($routeur, $networkId);
+
+        return response()->json(['success' => $ok]);
+    }
+
+    public function dhcpStoreLease(Request $request, Routeur $routeur)
+    {
+        $data = $request->validate([
+            'address' => 'required|ip',
+            'mac_address' => 'required|string',
+            'server' => 'required|string',
+            'comment' => 'nullable|string',
+        ]);
+
+        $service = app(MikrotikService::class);
+        $result = $service->addDhcpLease($routeur, $data);
+
+        return response()->json($result);
+    }
+
+    public function dhcpDestroyLease(Routeur $routeur, string $leaseId)
+    {
+        $service = app(MikrotikService::class);
+        $ok = $service->removeDhcpLease($routeur, $leaseId);
 
         return response()->json(['success' => $ok]);
     }

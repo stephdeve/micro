@@ -18,7 +18,7 @@
             <a href="{{ route('routeurs.index') }}" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-sm font-medium transition-all border border-slate-700 inline-flex items-center gap-2">
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
-            <button onclick="openModal('add')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-sm font-medium transition-all shadow-lg shadow-cyan-500/25 inline-flex items-center gap-2">
+            <button type="button" onclick="openModal('add')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-sm font-medium transition-all shadow-lg shadow-cyan-500/25 inline-flex items-center gap-2">
                 <i class="fas fa-plus"></i> Nouvelle Zone
             </button>
         </div>
@@ -69,13 +69,13 @@
                         <h3 class="font-semibold text-white text-sm">{{ $zone->nom }}</h3>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="toggleZone({{ $zone->id }})" class="w-7 h-7 rounded-lg {{ $zone->active ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' }} transition-all flex items-center justify-center" title="{{ $zone->active ? 'Désactiver' : 'Activer' }}">
+                        <button type="button" onclick="toggleZone({{ $zone->id }})" class="w-7 h-7 rounded-lg {{ $zone->active ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' }} transition-all flex items-center justify-center" title="{{ $zone->active ? 'Désactiver' : 'Activer' }}">
                             <i class="fas fa-power-off text-xs"></i>
                         </button>
-                        <button onclick="editZone({{ $zone->id }})" class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all flex items-center justify-center" title="Modifier">
+                        <button type="button" onclick="editZone({{ $zone->id }})" class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all flex items-center justify-center" title="Modifier">
                             <i class="fas fa-edit text-xs"></i>
                         </button>
-                        <button onclick="deleteZone({{ $zone->id }})" class="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all flex items-center justify-center" title="Supprimer">
+                        <button type="button" onclick="deleteZone({{ $zone->id }})" class="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all flex items-center justify-center" title="Supprimer">
                             <i class="fas fa-trash text-xs"></i>
                         </button>
                     </div>
@@ -160,7 +160,7 @@
                 <i class="fas fa-wifi text-4xl text-slate-600 mb-4"></i>
                 <h3 class="text-lg font-semibold text-white mb-1">Aucune zone WiFi configurée</h3>
                 <p class="text-sm text-slate-400 mb-4">Créez votre première zone WiFi pour commencer</p>
-                <button onclick="openModal('add')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-sm font-medium transition-all shadow-lg shadow-cyan-500/25 inline-flex items-center gap-2">
+                <button type="button" onclick="openModal('add')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-sm font-medium transition-all shadow-lg shadow-cyan-500/25 inline-flex items-center gap-2">
                     <i class="fas fa-plus"></i> Créer une zone
                 </button>
             </div>
@@ -182,7 +182,7 @@
                     <p class="text-[10px] text-slate-400">Configuration du réseau sans fil</p>
                 </div>
             </div>
-            <button onclick="closeModal()" class="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all flex items-center justify-center">
+            <button type="button" onclick="closeModal()" class="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all flex items-center justify-center">
                 <i class="fas fa-times text-xs"></i>
             </button>
         </div>
@@ -390,7 +390,7 @@
 </style>
 
 <script>
-    const BASE_URL = '{{ url('') }}';
+    const BASE_URL = '{{ url('admin-reseau') }}';
     function openModal(mode, zoneId = null) {
         const modal = document.getElementById('zoneModal');
         const form = document.getElementById('zoneForm');
@@ -398,10 +398,10 @@
 
         if (mode === 'edit' && zoneId) {
             title.innerHTML = '<i class="fas fa-edit"></i> Modifier Zone WiFi';
-            form.action = `${BASE_URL}/admin-reseau/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}`;
+            form.action = `${BASE_URL}/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}`;
             document.getElementById('method').value = 'PUT';
             // Charger les données de la zone
-            fetch(`${BASE_URL}/admin-reseau/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/show`)
+            fetch(`${BASE_URL}/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/show`)
                 .then(r => r.json())
                 .then(data => {
                     document.getElementById('zoneId').value = data.zone.id;
@@ -478,7 +478,7 @@
     }
 
     function toggleZone(zoneId) {
-        fetch(`${BASE_URL}/admin-reseau/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/toggle`, {
+        fetch(`${BASE_URL}/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/toggle`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -502,7 +502,7 @@
             return;
         }
 
-        fetch(`${BASE_URL}/admin-reseau/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}`, {
+        fetch(`${BASE_URL}/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,

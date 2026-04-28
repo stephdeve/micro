@@ -82,24 +82,24 @@
                     <div class="flex items-center gap-1">
                         <!-- Move Buttons -->
                         <div class="flex flex-col gap-0.5 mr-1">
-                            <button onclick="moveFilterRule('{{ $rule['id'] }}', 'up')" 
+                            <button type="button" onclick="moveFilterRule('{{ $rule['id'] }}', 'up')" 
                                     class="w-6 h-5 flex items-center justify-center rounded hover:bg-slate-700 text-slate-500 hover:text-white transition-all {{ $index === 0 ? 'invisible' : '' }}"
                                     title="Monter">
                                 <i class="fas fa-chevron-up text-xs"></i>
                             </button>
-                            <button onclick="moveFilterRule('{{ $rule['id'] }}', 'down')" 
+                            <button type="button" onclick="moveFilterRule('{{ $rule['id'] }}', 'down')" 
                                     class="w-6 h-5 flex items-center justify-center rounded hover:bg-slate-700 text-slate-500 hover:text-white transition-all {{ $index === count($groupedFilters[$chainName] ?? []) - 1 ? 'invisible' : '' }}"
                                     title="Descendre">
                                 <i class="fas fa-chevron-down text-xs"></i>
                             </button>
                         </div>
                         
-                        <button onclick="toggleFilterRule('{{ $rule['id'] }}', {{ $rule['disabled'] ? 'true' : 'false' }})" 
+                        <button type="button" onclick="toggleFilterRule('{{ $rule['id'] }}', {{ $rule['disabled'] ? 'true' : 'false' }})" 
                                 class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-700 text-slate-400 hover:text-{{ $rule['disabled'] ? 'emerald' : 'amber' }}-400 transition-all"
                                 title="{{ $rule['disabled'] ? 'Activer' : 'Désactiver' }}">
                             <i class="fas {{ $rule['disabled'] ? 'fa-play' : 'fa-pause' }}"></i>
                         </button>
-                        <button onclick="deleteFilterRule('{{ $rule['id'] }}')" 
+                        <button type="button" onclick="deleteFilterRule('{{ $rule['id'] }}')" 
                                 class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition-all"
                                 title="Supprimer">
                             <i class="fas fa-trash-alt"></i>
@@ -122,7 +122,7 @@ window.toggleFilterRule = async function(id, enable) {
     if (!confirm(`${enable ? 'Activer' : 'Désactiver'} cette règle ?`)) return;
     
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/filter/${id}/${enable ? 'enable' : 'disable'}`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/filter/${encodeURIComponent(id)}/${enable ? 'enable' : 'disable'}`, {
             method: 'POST',
             headers: { 
                 'X-CSRF-TOKEN': csrfToken,
@@ -146,7 +146,7 @@ window.deleteFilterRule = async function(id) {
     if (!confirm('Supprimer définitivement cette règle ?')) return;
     
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/filter/${id}`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/filter/${encodeURIComponent(id)}`, {
             method: 'DELETE',
             headers: { 
                 'X-CSRF-TOKEN': csrfToken,
@@ -182,7 +182,7 @@ window.moveFilterRule = async function(id, direction) {
     if (!destinationId) return;
     
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/filter/${id}/move`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/filter/${encodeURIComponent(id)}/move`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,

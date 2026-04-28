@@ -59,7 +59,7 @@ $unreadCount = \App\Models\MessageRecipient::where('user_id', $user?->id)->where
         <!-- Admin Réseau -->
         @role('admin_reseau|super_admin')
         <div x-data="{ open: true }" class="relative">
-            <button @click="open = !open" x-show="!collapsed" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors {{ request()->routeIs('admin-reseau.*') || request()->routeIs('routeurs.*') || request()->routeIs('interfaces.*') || request()->routeIs('securite.*') ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+            <button @click="open = !open" x-show="!collapsed" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors {{ request()->routeIs('admin-reseau.*') || request()->routeIs('routeurs.*') || request()->routeIs('securite.*') ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-server w-5 text-center text-cyan-400"></i>
                     <span class="text-sm font-medium">Réseau</span>
@@ -77,10 +77,6 @@ $unreadCount = \App\Models\MessageRecipient::where('user_id', $user?->id)->where
                 <a href="{{ route('routeurs.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('routeurs.*') ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''">
                     <i class="fas fa-network-wired w-4 text-center"></i>
                     <span x-show="!collapsed" class="whitespace-nowrap">Routeurs</span>
-                </a>
-                <a href="{{ route('interfaces.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('interfaces.*') ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''">
-                    <i class="fas fa-ethernet w-4 text-center"></i>
-                    <span x-show="!collapsed" class="whitespace-nowrap">Interfaces</span>
                 </a>
                 <a href="{{ route('securite.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('securite.*') ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''">
                     <i class="fas fa-shield-alt w-4 text-center"></i>

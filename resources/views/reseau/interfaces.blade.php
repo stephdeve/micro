@@ -152,25 +152,25 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
       {{-- Actions --}}
       <div class="flex gap-2 flex-wrap">
         @if($iface->statut === 'actif')
-          <button onclick="toggleIface('{{ $apiId }}','{{ $iface->nom }}',false)"
+          <button type="button" onclick="toggleIface('{{ $iface->nom }}',false)"
             title="Désactiver"
             class="flex-1 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:border-rose-400 rounded-lg text-xs transition flex items-center justify-center gap-1">
             <i class="fas fa-pause"></i> Désactiver
           </button>
         @else
-          <button onclick="toggleIface('{{ $apiId }}','{{ $iface->nom }}',true)"
+          <button type="button" onclick="toggleIface('{{ $iface->nom }}',true)"
             title="Activer"
             class="flex-1 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:border-emerald-400 rounded-lg text-xs transition flex items-center justify-center gap-1">
             <i class="fas fa-play"></i> Activer
           </button>
         @endif
-        <button onclick="openRename('{{ $apiId }}','{{ $iface->nom }}')" title="Renommer"
+        <button type="button" onclick="openRename('{{ $iface->nom }}')" title="Renommer"
           class="p-2 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white border border-slate-600 rounded-lg text-xs transition"><i class="fas fa-edit"></i></button>
-        <button onclick="openConfigure('{{ $apiId }}','{{ $iface->nom }}')" title="Configurer MTU"
+        <button type="button" onclick="openConfigure('{{ $iface->nom }}')" title="Configurer MTU"
           class="p-2 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white border border-slate-600 rounded-lg text-xs transition"><i class="fas fa-cog"></i></button>
-        <button onclick="openAssignIp('{{ $iface->nom }}')" title="Assigner IP"
+        <button type="button" onclick="openAssignIp('{{ $iface->nom }}')" title="Assigner IP"
           class="p-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs transition"><i class="fas fa-network-wired"></i></button>
-        <button onclick="openDetails('{{ $apiId }}','{{ $iface->nom }}')" title="Détails"
+        <button type="button" onclick="openDetails('{{ $iface->nom }}')" title="Détails"
           class="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs transition"><i class="fas fa-info-circle"></i></button>
       </div>
     </div>
@@ -180,7 +180,7 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
         <i class="fas fa-ethernet text-slate-600 text-3xl"></i>
       </div>
       <p class="text-slate-400 mb-4">Aucune interface trouvée</p>
-      <button onclick="syncInterfaces()" class="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-sm font-medium hover:opacity-90 transition">
+      <button type="button" onclick="syncInterfaces()" class="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl text-sm font-medium hover:opacity-90 transition">
         <i class="fas fa-sync mr-2"></i>Synchroniser depuis MikroTik
       </button>
     </div>
@@ -191,7 +191,7 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
 {{-- ===== MODAL: RENAME ===== --}}
 <div id="modalRename" class="modal-backdrop hidden">
   <div class="modal-box">
-    <div class="modal-hdr"><span class="modal-icon bg-blue-500/20 text-blue-400"><i class="fas fa-edit"></i></span><h3>Renommer l'interface</h3><button onclick="closeModals()" class="modal-close">&times;</button></div>
+    <div class="modal-hdr"><span class="modal-icon bg-blue-500/20 text-blue-400"><i class="fas fa-edit"></i></span><h3>Renommer l'interface</h3><button type="button" onclick="closeModals()" class="modal-close">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="renameId">
       <input type="hidden" id="renameOld">
@@ -199,8 +199,8 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
       <input id="renameNew" type="text" class="field-inp" placeholder="WAN-Principal">
     </div>
     <div class="modal-ftr">
-      <button onclick="closeModals()" class="btn-cancel">Annuler</button>
-      <button onclick="confirmRename()" class="btn-save"><i class="fas fa-check mr-1"></i>Renommer</button>
+      <button type="button" onclick="closeModals()" class="btn-cancel">Annuler</button>
+      <button type="button" onclick="confirmRename()" class="btn-save"><i class="fas fa-check mr-1"></i>Renommer</button>
     </div>
   </div>
 </div>
@@ -208,7 +208,7 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
 {{-- ===== MODAL: CONFIGURE ===== --}}
 <div id="modalConfig" class="modal-backdrop hidden">
   <div class="modal-box">
-    <div class="modal-hdr"><span class="modal-icon bg-amber-500/20 text-amber-400"><i class="fas fa-cog"></i></span><h3>Configurer l'interface</h3><button onclick="closeModals()" class="modal-close">&times;</button></div>
+    <div class="modal-hdr"><span class="modal-icon bg-amber-500/20 text-amber-400"><i class="fas fa-cog"></i></span><h3>Configurer l'interface</h3><button type="button" onclick="closeModals()" class="modal-close">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="configId">
       <label class="field-lbl">MTU (64–9000)</label>
@@ -219,8 +219,8 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
       <input id="configComment" type="text" class="field-inp" placeholder="Description...">
     </div>
     <div class="modal-ftr">
-      <button onclick="closeModals()" class="btn-cancel">Annuler</button>
-      <button onclick="confirmConfigure()" class="btn-save"><i class="fas fa-check mr-1"></i>Appliquer</button>
+      <button type="button" onclick="closeModals()" class="btn-cancel">Annuler</button>
+      <button type="button" onclick="confirmConfigure()" class="btn-save"><i class="fas fa-check mr-1"></i>Appliquer</button>
     </div>
   </div>
 </div>
@@ -228,7 +228,7 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
 {{-- ===== MODAL: ASSIGN IP ===== --}}
 <div id="modalIp" class="modal-backdrop hidden">
   <div class="modal-box">
-    <div class="modal-hdr"><span class="modal-icon bg-cyan-500/20 text-cyan-400"><i class="fas fa-network-wired"></i></span><h3>Assigner une adresse IP</h3><button onclick="closeModals()" class="modal-close">&times;</button></div>
+    <div class="modal-hdr"><span class="modal-icon bg-cyan-500/20 text-cyan-400"><i class="fas fa-network-wired"></i></span><h3>Assigner une adresse IP</h3><button type="button" onclick="closeModals()" class="modal-close">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="ipIfaceName">
       <label class="field-lbl">Adresse IP (CIDR) <span class="text-slate-500">ex: 192.168.1.1/24</span></label>
@@ -237,8 +237,8 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
       <input id="ipNetwork" type="text" class="field-inp font-mono" placeholder="192.168.10.0">
     </div>
     <div class="modal-ftr">
-      <button onclick="closeModals()" class="btn-cancel">Annuler</button>
-      <button onclick="confirmIp()" class="btn-save"><i class="fas fa-check mr-1"></i>Assigner</button>
+      <button type="button" onclick="closeModals()" class="btn-cancel">Annuler</button>
+      <button type="button" onclick="confirmIp()" class="btn-save"><i class="fas fa-check mr-1"></i>Assigner</button>
     </div>
   </div>
 </div>
@@ -246,9 +246,9 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
 {{-- ===== MODAL: DETAILS ===== --}}
 <div id="modalDetails" class="modal-backdrop hidden">
   <div class="modal-box max-w-xl">
-    <div class="modal-hdr"><span class="modal-icon bg-blue-500/20 text-blue-400"><i class="fas fa-info-circle"></i></span><h3 id="detailsTitle">Détails</h3><button onclick="closeModals()" class="modal-close">&times;</button></div>
+    <div class="modal-hdr"><span class="modal-icon bg-blue-500/20 text-blue-400"><i class="fas fa-info-circle"></i></span><h3 id="detailsTitle">Détails</h3><button type="button" onclick="closeModals()" class="modal-close">&times;</button></div>
     <div class="modal-body" id="detailsContent"><div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin mr-2"></i>Chargement...</div></div>
-    <div class="modal-ftr"><button onclick="closeModals()" class="btn-cancel w-full">Fermer</button></div>
+    <div class="modal-ftr"><button type="button" onclick="closeModals()" class="btn-cancel w-full">Fermer</button></div>
   </div>
 </div>
 
@@ -282,7 +282,7 @@ $txTotal  = collect($interfacesWithIps)->sum('debit_sortant');
 const ROUTEUR_ID = {{ $routeur->id }};
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content;
 const IS_ONLINE = {{ $routeur->statut === 'en_ligne' ? 'true' : 'false' }};
-const BASE_URL = '{{ url('') }}';
+const BASE_URL = '{{ url('admin-reseau') }}';
 
 // ===== TOAST =====
 function toast(msg, type = 'success') {
@@ -313,10 +313,10 @@ async function syncInterfaces() {
 }
 
 // ===== TOGGLE =====
-async function toggleIface(apiId, name, enable) {
+async function toggleIface(name, enable) {
   if (!confirm(`${enable ? 'Activer' : 'Désactiver'} l'interface ${name} ?`)) return;
   try {
-    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${apiId}/${enable ? 'enable' : 'disable'}`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${encodeURIComponent(name)}/${enable ? 'enable' : 'disable'}`, {
       method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ name })
     });
@@ -338,8 +338,8 @@ function openModal(id) {
 document.querySelectorAll('.modal-backdrop').forEach(m => m.addEventListener('click', e => { if(e.target === m) closeModals(); }));
 
 // Rename
-function openRename(id, name) {
-  document.getElementById('renameId').value = id;
+function openRename(name) {
+  document.getElementById('renameId').value = name;
   document.getElementById('renameOld').value = name;
   document.getElementById('renameNew').value = name;
   openModal('modalRename');
@@ -351,7 +351,7 @@ async function confirmRename() {
   const nw = document.getElementById('renameNew').value.trim();
   if (!nw) { toast('Nom invalide', 'error'); return; }
   try {
-    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${id}/rename`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${encodeURIComponent(id)}/rename`, {
       method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ name: nw, old_name: old })
     });
@@ -362,8 +362,8 @@ async function confirmRename() {
 }
 
 // Configure
-function openConfigure(id, name) {
-  document.getElementById('configId').value = id;
+function openConfigure(name) {
+  document.getElementById('configId').value = name;
   openModal('modalConfig');
 }
 async function confirmConfigure() {
@@ -372,7 +372,7 @@ async function confirmConfigure() {
   const l2mtu = document.getElementById('configL2mtu').value;
   const comment = document.getElementById('configComment').value;
   try {
-    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${id}/configure`, {
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${encodeURIComponent(id)}/configure`, {
       method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ mtu, l2mtu, comment })
     });
@@ -407,12 +407,12 @@ async function confirmIp() {
 }
 
 // Details
-async function openDetails(apiId, name) {
+async function openDetails(name) {
   document.getElementById('detailsTitle').textContent = 'Détails — ' + name;
   document.getElementById('detailsContent').innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin mr-2"></i>Chargement...</div>';
   openModal('modalDetails');
   try {
-    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${apiId}/details`, { headers: { 'Accept': 'application/json' } });
+    const r = await fetch(`${BASE_URL}/routeurs/${ROUTEUR_ID}/interfaces/${encodeURIComponent(name)}/details`, { headers: { 'Accept': 'application/json' } });
     const d = await r.json();
     if (d.success) {
       const i = d.interface;
@@ -487,7 +487,7 @@ async function pollAllInterfaces() {
       const txDelta = Math.max(0, d.tx_bytes - (state.prevTx || d.tx_bytes));
       state.prevRx = d.rx_bytes;
       state.prevTx = d.tx_bytes;
-
+      
       const rxMbps = (rxDelta * 8 / 1048576 / 5).toFixed(3); // over 5s interval
       const txMbps = (txDelta * 8 / 1048576 / 5).toFixed(3);
 

@@ -106,9 +106,25 @@ Route::middleware('auth')->group(function () {
         // DHCP
         Route::get('routeurs/{routeur}/dhcp', [AdminReseauController::class, 'dhcpIndex'])->name('dhcp');
         Route::post('routeurs/{routeur}/dhcp/servers', [AdminReseauController::class, 'dhcpStoreServer'])->name('dhcp.servers.store');
-        Route::delete('routeurs/{routeur}/dhcp/servers/{server}', [AdminReseauController::class, 'dhcpDestroyServer'])->name('dhcp.servers.destroy');
+        Route::delete('routeurs/{routeur}/dhcp/servers/{server}', [AdminReseauController::class, 'dhcpDestroyServer'])->name('dhcp.servers.destroy')->where('server', '.*');
+        Route::post('routeurs/{routeur}/dhcp/servers/{server}/enable', [AdminReseauController::class, 'dhcpEnableServer'])->name('dhcp.servers.enable')->where('server', '.*');
+        Route::post('routeurs/{routeur}/dhcp/servers/{server}/disable', [AdminReseauController::class, 'dhcpDisableServer'])->name('dhcp.servers.disable')->where('server', '.*');
         Route::post('routeurs/{routeur}/dhcp/networks', [AdminReseauController::class, 'dhcpStoreNetwork'])->name('dhcp.networks.store');
-        Route::delete('routeurs/{routeur}/dhcp/networks/{network}', [AdminReseauController::class, 'dhcpDestroyNetwork'])->name('dhcp.networks.destroy');
+        Route::delete('routeurs/{routeur}/dhcp/networks/{network}', [AdminReseauController::class, 'dhcpDestroyNetwork'])->name('dhcp.networks.destroy')->where('network', '.*');
+        Route::post('routeurs/{routeur}/dhcp/leases', [AdminReseauController::class, 'dhcpStoreLease'])->name('dhcp.leases.store');
+        Route::delete('routeurs/{routeur}/dhcp/leases/{lease}', [AdminReseauController::class, 'dhcpDestroyLease'])->name('dhcp.leases.destroy')->where('lease', '.*');
+
+        // Interfaces
+        Route::get('routeurs/{routeur}/interfaces', [MikroTikInterfaceController::class, 'index'])->name('interfaces');
+        Route::post('routeurs/{routeur}/interfaces/sync', [MikroTikInterfaceController::class, 'sync'])->name('interfaces.sync');
+        Route::post('routeurs/{routeur}/interfaces/{interface}/enable', [MikroTikInterfaceController::class, 'enable'])->name('interfaces.enable');
+        Route::post('routeurs/{routeur}/interfaces/{interface}/disable', [MikroTikInterfaceController::class, 'disable'])->name('interfaces.disable');
+        Route::post('routeurs/{routeur}/interfaces/{interface}/rename', [MikroTikInterfaceController::class, 'rename'])->name('interfaces.rename');
+        Route::post('routeurs/{routeur}/interfaces/{interface}/configure', [MikroTikInterfaceController::class, 'configure'])->name('interfaces.configure');
+        Route::post('routeurs/{routeur}/interfaces/{interface}/ip', [MikroTikInterfaceController::class, 'setIp'])->name('interfaces.ip');
+        Route::delete('routeurs/{routeur}/interfaces/ips/{address}', [MikroTikInterfaceController::class, 'removeIp'])->name('interfaces.ip.remove');
+        Route::get('routeurs/{routeur}/interfaces/{interface}/details', [MikroTikInterfaceController::class, 'details'])->name('interfaces.details');
+        Route::get('routeurs/{routeur}/interfaces/{interface}/realtime', [MikroTikInterfaceController::class, 'realtimeStats'])->name('interfaces.realtime');
     });
 
     // MikroTik API Routes (hors prefix admin-reseau pour URL plus simple)
@@ -153,70 +169,6 @@ Route::middleware('auth')->group(function () {
     Route::get('routeurs/print', [RouteurController::class, 'print'])->name('routeurs.print');
     Route::get('routeurs/{routeur}/sync', [RouteurController::class, 'sync'])->name('routeurs.sync');
     Route::post('routeurs/{routeur}/restart', [RouteurController::class, 'restart'])->name('routeurs.restart');
-
-    // MikroTik Interface Management Routes
-    Route::get('routeurs/{routeur}/interfaces', [MikroTikInterfaceController::class, 'index'])->name('routeurs.interfaces');
-    Route::post('routeurs/{routeur}/interfaces/sync', [MikroTikInterfaceController::class, 'sync'])->name('routeurs.interfaces.sync');
-    Route::post('routeurs/{routeur}/interfaces/{interface}/enable', [MikroTikInterfaceController::class, 'enable'])->name('routeurs.interfaces.enable');
-    Route::post('routeurs/{routeur}/interfaces/{interface}/disable', [MikroTikInterfaceController::class, 'disable'])->name('routeurs.interfaces.disable');
-    Route::post('routeurs/{routeur}/interfaces/{interface}/rename', [MikroTikInterfaceController::class, 'rename'])->name('routeurs.interfaces.rename');
-    Route::post('routeurs/{routeur}/interfaces/{interface}/configure', [MikroTikInterfaceController::class, 'configure'])->name('routeurs.interfaces.configure');
-    Route::post('routeurs/{routeur}/interfaces/{interface}/ip', [MikroTikInterfaceController::class, 'setIp'])->name('routeurs.interfaces.ip');
-    Route::delete('routeurs/{routeur}/interfaces/ips/{address}', [MikroTikInterfaceController::class, 'removeIp'])->name('routeurs.interfaces.ip.remove');
-    Route::get('routeurs/{routeur}/interfaces/{interface}/details', [MikroTikInterfaceController::class, 'details'])->name('routeurs.interfaces.details');
-    Route::get('routeurs/{routeur}/interfaces/{interface}/realtime', [MikroTikInterfaceController::class, 'realtimeStats'])->name('routeurs.interfaces.realtime');
-
-    // MikroTik Route Management Routes
-    Route::get('routeurs/{routeur}/routes', [MikroTikRouteController::class, 'index'])->name('routeurs.routes');
-    Route::post('routeurs/{routeur}/routes/sync', [MikroTikRouteController::class, 'sync'])->name('routeurs.routes.sync');
-    Route::post('routeurs/{routeur}/routes', [MikroTikRouteController::class, 'store'])->name('routeurs.routes.store');
-    Route::put('routeurs/{routeur}/routes/{route}', [MikroTikRouteController::class, 'update'])->name('routeurs.routes.update');
-    Route::delete('routeurs/{routeur}/routes/{route}', [MikroTikRouteController::class, 'destroy'])->name('routeurs.routes.destroy');
-    Route::post('routeurs/{routeur}/routes/{route}/enable', [MikroTikRouteController::class, 'enable'])->name('routeurs.routes.enable');
-    Route::post('routeurs/{routeur}/routes/{route}/disable', [MikroTikRouteController::class, 'disable'])->name('routeurs.routes.disable');
-
-    // MikroTik Firewall Management Routes
-    Route::get('routeurs/{routeur}/firewall', [MikroTikFirewallController::class, 'index'])->name('routeurs.firewall');
-    // Filter rules
-    Route::post('routeurs/{routeur}/firewall/filter', [MikroTikFirewallController::class, 'storeFilter'])->name('routeurs.firewall.filter.store');
-    Route::put('routeurs/{routeur}/firewall/filter/{rule}', [MikroTikFirewallController::class, 'updateFilter'])->name('routeurs.firewall.filter.update');
-    Route::delete('routeurs/{routeur}/firewall/filter/{rule}', [MikroTikFirewallController::class, 'destroyFilter'])->name('routeurs.firewall.filter.destroy');
-    Route::post('routeurs/{routeur}/firewall/filter/{rule}/enable', [MikroTikFirewallController::class, 'toggleFilter'])->name('routeurs.firewall.filter.enable')->defaults('enable', true);
-    Route::post('routeurs/{routeur}/firewall/filter/{rule}/disable', [MikroTikFirewallController::class, 'toggleFilter'])->name('routeurs.firewall.filter.disable')->defaults('enable', false);
-    Route::post('routeurs/{routeur}/firewall/filter/{rule}/move', [MikroTikFirewallController::class, 'moveFilter'])->name('routeurs.firewall.filter.move');
-    // NAT rules
-    Route::post('routeurs/{routeur}/firewall/nat', [MikroTikFirewallController::class, 'storeNat'])->name('routeurs.firewall.nat.store');
-    Route::put('routeurs/{routeur}/firewall/nat/{rule}', [MikroTikFirewallController::class, 'updateNat'])->name('routeurs.firewall.nat.update');
-    Route::delete('routeurs/{routeur}/firewall/nat/{rule}', [MikroTikFirewallController::class, 'destroyNat'])->name('routeurs.firewall.nat.destroy');
-    Route::post('routeurs/{routeur}/firewall/nat/{rule}/enable', [MikroTikFirewallController::class, 'toggleNat'])->name('routeurs.firewall.nat.enable')->defaults('enable', true);
-    Route::post('routeurs/{routeur}/firewall/nat/{rule}/disable', [MikroTikFirewallController::class, 'toggleNat'])->name('routeurs.firewall.nat.disable')->defaults('enable', false);
-    Route::post('routeurs/{routeur}/firewall/nat/{rule}/move', [MikroTikFirewallController::class, 'moveNat'])->name('routeurs.firewall.nat.move');
-    // Mangle rules
-    Route::post('routeurs/{routeur}/firewall/mangle', [MikroTikFirewallController::class, 'storeMangle'])->name('routeurs.firewall.mangle.store');
-    Route::put('routeurs/{routeur}/firewall/mangle/{rule}', [MikroTikFirewallController::class, 'updateMangle'])->name('routeurs.firewall.mangle.update');
-    Route::delete('routeurs/{routeur}/firewall/mangle/{rule}', [MikroTikFirewallController::class, 'destroyMangle'])->name('routeurs.firewall.mangle.destroy');
-    Route::post('routeurs/{routeur}/firewall/mangle/{rule}/enable', [MikroTikFirewallController::class, 'toggleMangle'])->name('routeurs.firewall.mangle.enable')->defaults('enable', true);
-    Route::post('routeurs/{routeur}/firewall/mangle/{rule}/disable', [MikroTikFirewallController::class, 'toggleMangle'])->name('routeurs.firewall.mangle.disable')->defaults('enable', false);
-    Route::post('routeurs/{routeur}/firewall/mangle/{rule}/move', [MikroTikFirewallController::class, 'moveMangle'])->name('routeurs.firewall.mangle.move');
-
-    // WiFi Zones
-    Route::get('routeurs/{routeur}/wifi-zones', [WifiZoneController::class, 'index'])->name('routeurs.wifi-zones');
-    Route::post('routeurs/{routeur}/wifi-zones', [WifiZoneController::class, 'store'])->name('routeurs.wifi-zones.store');
-    Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/show', [WifiZoneController::class, 'show'])->name('routeurs.wifi-zones.show');
-    Route::put('routeurs/{routeur}/wifi-zones/{wifiZone}', [WifiZoneController::class, 'update'])->name('routeurs.wifi-zones.update');
-    Route::delete('routeurs/{routeur}/wifi-zones/{wifiZone}', [WifiZoneController::class, 'destroy'])->name('routeurs.wifi-zones.destroy');
-    Route::post('routeurs/{routeur}/wifi-zones/{wifiZone}/toggle', [WifiZoneController::class, 'toggle'])->name('routeurs.wifi-zones.toggle');
-    Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/clients', [WifiZoneController::class, 'refreshClients'])->name('routeurs.wifi-zones.clients');
-
-    // Employés / Utilisateurs réseau
-    Route::get('routeurs/{routeur}/employes', [EmployeNetworkController::class, 'index'])->name('routeurs.employes.index');
-    Route::post('routeurs/{routeur}/employes', [EmployeNetworkController::class, 'store'])->name('routeurs.employes.store');
-    Route::get('routeurs/{routeur}/employes/{employe}/edit', [EmployeNetworkController::class, 'edit'])->name('routeurs.employes.edit');
-    Route::put('routeurs/{routeur}/employes/{employe}', [EmployeNetworkController::class, 'update'])->name('routeurs.employes.update');
-    Route::delete('routeurs/{routeur}/employes/{employe}', [EmployeNetworkController::class, 'destroy'])->name('routeurs.employes.destroy');
-    Route::get('routeurs/{routeur}/employes/{employe}', [EmployeNetworkController::class, 'show'])->name('routeurs.employes.show');
-    Route::post('routeurs/{routeur}/employes/{employe}/toggle', [EmployeNetworkController::class, 'toggle'])->name('routeurs.employes.toggle');
-    Route::get('routeurs/{routeur}/employes/{employe}/realtime', [EmployeNetworkController::class, 'realtimeStats'])->name('routeurs.employes.realtime');
 
     Route::resource('routeurs', RouteurController::class);
     Route::get('interfaces/{interface}/toggle', [InterfaceModelController::class, 'toggle'])->name('interfaces.toggle');

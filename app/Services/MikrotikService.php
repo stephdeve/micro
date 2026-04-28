@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use PEAR2\Net\RouterOS\Client;
 use PEAR2\Net\RouterOS\Request;
+use PEAR2\Net\RouterOS\Response;
 
 class MikrotikService
 {
@@ -1066,24 +1067,73 @@ class MikrotikService
         }
     }
 
-    public function addDhcpServer(Routeur $routeur, array $data): bool
+    public function addIpPool(Routeur $routeur, string $name, string $ranges): bool
     {
         try {
             $client = $this->client($routeur);
+
+            // Vérifier si le pool existe déjà
+            $checkReq = new Request('/ip/pool/print');
+            $checkReq->setArgument('?name', $name);
+            $existing = $client->sendSync($checkReq);
+            foreach ($existing as $item) {
+                if ($item->getProperty('name') === $name) {
+                    // Pool existe déjà, on met à jour sa plage
+                    $req = new Request('/ip/pool/set');
+                    $req->setArgument('numbers', $name);
+                    $req->setArgument('ranges', $ranges);
+                    $client->sendSync($req);
+                    return true;
+                }
+            }
+
+            // Créer le pool
+            $req = new Request('/ip/pool/add');
+            $req->setArgument('name', $name);
+            $req->setArgument('ranges', $ranges);
+            $client->sendSync($req);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik addIpPool failed', ['routeur_id' => $routeur->id, 'name' => $name, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    public function addDhcpServer(Routeur $routeur, array $data): array
+    {
+        try {
+            $client = $this->client($routeur);
+
+            // Créer le pool d'adresses s'il n'existe pas
+            if (!empty($data['address_pool']) && !empty($data['pool_range'])) {
+                $poolCreated = $this->addIpPool($routeur, $data['address_pool'], $data['pool_range']);
+                if (!$poolCreated) {
+                    return ['success' => false, 'message' => 'Échec de la création du pool d\'adresses'];
+                }
+            }
+
             $req = new Request('/ip/dhcp-server/add');
             $req->setArgument('name', $data['name']);
             $req->setArgument('interface', $data['interface']);
             $req->setArgument('address-pool', $data['address_pool']);
             if (!empty($data['lease_time'])) $req->setArgument('lease-time', $data['lease_time']);
-            $client->sendSync($req);
-            return true;
+            $response = $client->sendSync($req);
+
+            // Vérifier la réponse de MikroTik
+            foreach ($response as $item) {
+                if ($item->getType() === Response::TYPE_ERROR) {
+                    return ['success' => false, 'message' => $item->getProperty('message') ?? 'Erreur MikroTik'];
+                }
+            }
+
+            return ['success' => true, 'message' => 'Serveur DHCP créé avec succès'];
         } catch (\Throwable $e) {
             Log::error('Mikrotik addDhcpServer failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
-            return false;
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    public function addDhcpNetwork(Routeur $routeur, array $data): bool
+    public function addDhcpNetwork(Routeur $routeur, array $data): array
     {
         try {
             $client = $this->client($routeur);
@@ -1093,11 +1143,19 @@ class MikrotikService
             if (!empty($data['dns_server'])) $req->setArgument('dns-server', $data['dns_server']);
             if (!empty($data['domain'])) $req->setArgument('domain', $data['domain']);
             if (!empty($data['comment'])) $req->setArgument('comment', $data['comment']);
-            $client->sendSync($req);
-            return true;
+            $response = $client->sendSync($req);
+
+            // Vérifier la réponse de MikroTik
+            foreach ($response as $item) {
+                if ($item->getType() === Response::TYPE_ERROR) {
+                    return ['success' => false, 'message' => $item->getProperty('message') ?? 'Erreur MikroTik'];
+                }
+            }
+
+            return ['success' => true, 'message' => 'Réseau DHCP créé avec succès'];
         } catch (\Throwable $e) {
             Log::error('Mikrotik addDhcpNetwork failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
-            return false;
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
@@ -1115,6 +1173,34 @@ class MikrotikService
         }
     }
 
+    public function enableDhcpServer(Routeur $routeur, string $serverId): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            $req = new Request('/ip/dhcp-server/enable');
+            $req->setArgument('numbers', $serverId);
+            $client->sendSync($req);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik enableDhcpServer failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    public function disableDhcpServer(Routeur $routeur, string $serverId): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            $req = new Request('/ip/dhcp-server/disable');
+            $req->setArgument('numbers', $serverId);
+            $client->sendSync($req);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik disableDhcpServer failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
     public function removeDhcpNetwork(Routeur $routeur, string $networkId): bool
     {
         try {
@@ -1125,6 +1211,47 @@ class MikrotikService
             return true;
         } catch (\Throwable $e) {
             Log::error('Mikrotik removeDhcpNetwork failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    public function addDhcpLease(Routeur $routeur, array $data): array
+    {
+        try {
+            $client = $this->client($routeur);
+            $req = new Request('/ip/dhcp-server/lease/add');
+            $req->setArgument('address', $data['address']);
+            $req->setArgument('mac-address', $data['mac_address']);
+            $req->setArgument('server', $data['server']);
+            if (!empty($data['comment'])) $req->setArgument('comment', $data['comment']);
+            // Marquer comme bail statique
+            $req->setArgument('dynamic', 'no');
+            $response = $client->sendSync($req);
+
+            // Vérifier la réponse de MikroTik
+            foreach ($response as $item) {
+                if ($item->getType() === Response::TYPE_ERROR) {
+                    return ['success' => false, 'message' => $item->getProperty('message') ?? 'Erreur MikroTik'];
+                }
+            }
+
+            return ['success' => true, 'message' => 'Bail statique créé avec succès'];
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik addDhcpLease failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function removeDhcpLease(Routeur $routeur, string $leaseId): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            $req = new Request('/ip/dhcp-server/lease/remove');
+            $req->setArgument('numbers', $leaseId);
+            $client->sendSync($req);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik removeDhcpLease failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
             return false;
         }
     }
@@ -1396,14 +1523,14 @@ class MikrotikService
     /**
      * Obtenir les détails complets d'une interface avec IP
      */
-    public function getInterfaceDetails(Routeur $routeur, string $interfaceId): ?array
+    public function getInterfaceDetails(Routeur $routeur, string $interfaceName): ?array
     {
         try {
             $client = $this->client($routeur);
 
-            // Obtenir les infos de l'interface
+            // Obtenir les infos de l'interface par nom (plus fiable que l'ID avec *)
             $req = new Request('/interface/print');
-            $req->setQuery('?#.id=' . $interfaceId);
+            $req->setQuery('?name=' . $interfaceName);
             $resp = $client->sendSync($req);
 
             $interface = null;

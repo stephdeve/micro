@@ -66,24 +66,24 @@
             
             <div class="flex items-center gap-1">
                 <div class="flex flex-col gap-0.5 mr-1">
-                    <button onclick="moveNatRule('{{ $rule['id'] }}', 'up')" 
+                    <button type="button" onclick="moveNatRule('{{ $rule['id'] }}', 'up')" 
                             class="w-6 h-5 flex items-center justify-center rounded hover:bg-slate-700 text-slate-500 hover:text-white transition-all {{ $index === 0 ? 'invisible' : '' }}"
                             title="Monter">
                         <i class="fas fa-chevron-up text-xs"></i>
                     </button>
-                    <button onclick="moveNatRule('{{ $rule['id'] }}', 'down')" 
+                    <button type="button" onclick="moveNatRule('{{ $rule['id'] }}', 'down')" 
                             class="w-6 h-5 flex items-center justify-center rounded hover:bg-slate-700 text-slate-500 hover:text-white transition-all {{ $index === count($natRules) - 1 ? 'invisible' : '' }}"
                             title="Descendre">
                         <i class="fas fa-chevron-down text-xs"></i>
                     </button>
                 </div>
                 
-                <button onclick="toggleNatRule('{{ $rule['id'] }}', {{ $rule['disabled'] ? 'true' : 'false' }})" 
+                <button type="button" onclick="toggleNatRule('{{ $rule['id'] }}', {{ $rule['disabled'] ? 'true' : 'false' }})" 
                         class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-700 text-slate-400 hover:text-{{ $rule['disabled'] ? 'emerald' : 'amber' }}-400 transition-all"
                         title="{{ $rule['disabled'] ? 'Activer' : 'Désactiver' }}">
                     <i class="fas {{ $rule['disabled'] ? 'fa-play' : 'fa-pause' }}"></i>
                 </button>
-                <button onclick="deleteNatRule('{{ $rule['id'] }}')" 
+                <button type="button" onclick="deleteNatRule('{{ $rule['id'] }}')" 
                         class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition-all"
                         title="Supprimer">
                     <i class="fas fa-trash-alt"></i>
@@ -103,7 +103,7 @@ window.toggleNatRule = async function(id, enable) {
     if (!confirm(`${enable ? 'Activer' : 'Désactiver'} cette règle NAT ?`)) return;
     
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/nat/${id}/${enable ? 'enable' : 'disable'}`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/nat/${encodeURIComponent(id)}/${enable ? 'enable' : 'disable'}`, {
             method: 'POST',
             headers: { 
                 'X-CSRF-TOKEN': csrfToken,
@@ -127,7 +127,7 @@ window.deleteNatRule = async function(id) {
     if (!confirm('Supprimer définitivement cette règle NAT ?')) return;
     
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/nat/${id}`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/nat/${encodeURIComponent(id)}`, {
             method: 'DELETE',
             headers: { 
                 'X-CSRF-TOKEN': csrfToken,
@@ -162,7 +162,7 @@ window.moveNatRule = async function(id, direction) {
     if (!destinationId) return;
     
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/nat/${id}/move`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/nat/${encodeURIComponent(id)}/move`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,

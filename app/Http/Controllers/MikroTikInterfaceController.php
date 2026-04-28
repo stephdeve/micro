@@ -218,7 +218,7 @@ class MikroTikInterfaceController extends Controller
 
             $request->validate([
                 'mtu' => 'nullable|integer|min:64|max:9000',
-                'l2mtu' => 'nullable|integer|min|64|max:9000',
+                'l2mtu' => 'nullable|integer|min:64|max:9000',
                 'comment' => 'nullable|string|max:255'
             ]);
 
@@ -338,11 +338,8 @@ class MikroTikInterfaceController extends Controller
                 ], 400);
             }
 
-            // Get interface from DB to use mikrotik_id
-            $interface = $routeur->interfaces()->where('nom', $interfaceId)->first();
-            $apiInterfaceId = $interface?->mikrotik_id ?? $interfaceId;
-
-            $details = $this->mikrotik->getInterfaceDetails($routeur, $apiInterfaceId);
+            // Use interface name for API call (more reliable than ID with *)
+            $details = $this->mikrotik->getInterfaceDetails($routeur, $interfaceId);
 
             if (!$details) {
                 return response()->json([

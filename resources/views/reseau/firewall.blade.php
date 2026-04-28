@@ -50,15 +50,15 @@
         </div>
         
         @if($tab === 'filter')
-            <button onclick="openFilterModal()" class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+            <button type="button" onclick="openFilterModal()" class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20">
                 <i class="fas fa-plus"></i>Ajouter règle
             </button>
         @elseif($tab === 'nat')
-            <button onclick="openNatModal()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+            <button type="button" onclick="openNatModal()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
                 <i class="fas fa-plus"></i>Ajouter NAT
             </button>
         @else
-            <button onclick="openMangleModal()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20">
+            <button type="button" onclick="openMangleModal()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20">
                 <i class="fas fa-plus"></i>Ajouter Mangle
             </button>
         @endif
@@ -87,7 +87,7 @@
                 </div>
                 <h3 id="filterModalTitle" class="text-lg font-bold text-white">Ajouter règle Filter</h3>
             </div>
-            <button onclick="closeFilterModal()" class="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-all">
+            <button type="button" onclick="closeFilterModal()" class="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-all">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -161,8 +161,8 @@
         </div>
         
         <div class="px-5 py-4 border-t border-slate-700 flex justify-end gap-2">
-            <button onclick="closeFilterModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium transition-all">Annuler</button>
-            <button onclick="saveFilterRule()" class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-medium transition-all flex items-center gap-2">
+            <button type="button" onclick="closeFilterModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium transition-all">Annuler</button>
+            <button type="button" onclick="saveFilterRule()" class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-medium transition-all flex items-center gap-2">
                 <i class="fas fa-check"></i>Enregistrer
             </button>
         </div>
@@ -180,7 +180,7 @@
                 </div>
                 <h3 id="natModalTitle" class="text-lg font-bold text-white">Ajouter règle NAT</h3>
             </div>
-            <button onclick="closeNatModal()" class="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-all">
+            <button type="button" onclick="closeNatModal()" class="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-all">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -279,8 +279,8 @@
         </div>
         
         <div class="px-5 py-4 border-t border-slate-700 flex justify-end gap-2">
-            <button onclick="closeNatModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium transition-all">Annuler</button>
-            <button onclick="saveNatRule()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all flex items-center gap-2">
+            <button type="button" onclick="closeNatModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium transition-all">Annuler</button>
+            <button type="button" onclick="saveNatRule()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all flex items-center gap-2">
                 <i class="fas fa-check"></i>Enregistrer
             </button>
         </div>
@@ -298,7 +298,7 @@
                 </div>
                 <h3 id="mangleModalTitle" class="text-lg font-bold text-white">Ajouter règle Mangle</h3>
             </div>
-            <button onclick="closeMangleModal()" class="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-all">
+            <button type="button" onclick="closeMangleModal()" class="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-all">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -412,8 +412,8 @@
         </div>
         
         <div class="px-5 py-4 border-t border-slate-700 flex justify-end gap-2">
-            <button onclick="closeMangleModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium transition-all">Annuler</button>
-            <button onclick="saveMangleRule()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-all flex items-center gap-2">
+            <button type="button" onclick="closeMangleModal()" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm font-medium transition-all">Annuler</button>
+            <button type="button" onclick="saveMangleRule()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-all flex items-center gap-2">
                 <i class="fas fa-check"></i>Enregistrer
             </button>
         </div>
@@ -423,7 +423,7 @@
 <script>
 const routeurId = {{ $routeur->id }};
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
-const BASE_URL = '{{ url('') }}';
+const BASE_URL = '{{ url('admin-reseau') }}';
 
 // Toast System
 function showToast(message, type = 'success') {
@@ -438,7 +438,7 @@ function showToast(message, type = 'success') {
     toast.innerHTML = `
         <i class="fas ${icon}"></i>
         <span class="text-sm font-medium">${message}</span>
-        <button onclick="this.parentElement.remove()" class="ml-2 text-current hover:opacity-70">
+        <button type="button" onclick="this.parentElement.remove()" class="ml-2 text-current hover:opacity-70">
             <i class="fas fa-times text-xs"></i>
         </button>
     `;
@@ -477,7 +477,7 @@ window.saveFilterRule = async function() {
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
-    
+
     const data = {
         chain: document.getElementById('filterChain').value,
         action: document.getElementById('filterAction').value,
@@ -488,9 +488,13 @@ window.saveFilterRule = async function() {
         dst_address: document.getElementById('filterDstAddress').value,
         dst_port: document.getElementById('filterDstPort').value
     };
-    
+
+    console.log('Saving filter rule:', data);
+    console.log('URL:', `${BASE_URL}/routeurs/${routeurId}/firewall/filter`);
+    console.log('CSRF Token:', csrfToken ? 'present' : 'missing');
+
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/filter`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/filter`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -499,19 +503,30 @@ window.saveFilterRule = async function() {
             },
             body: JSON.stringify(data)
         });
-        
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+        }
+
         const result = await response.json();
+        console.log('Response result:', result);
+
         if (result.success) {
-            showToast(result.message || 'Règle ajoutée avec succès');
+            alert(result.message || 'Règle ajoutée avec succès');
             closeFilterModal();
             setTimeout(() => location.reload(), 500);
         } else {
-            showToast(result.message || 'Erreur lors de l\'enregistrement', 'error');
+            alert('Erreur: ' + (result.message || 'Échec de l\'enregistrement'));
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
     } catch (e) {
-        showToast('Erreur: ' + e.message, 'error');
+        console.error('Exception:', e);
+        alert('Erreur: ' + e.message);
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
@@ -547,7 +562,7 @@ window.saveNatRule = async function() {
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
-    
+
     const data = {
         chain: document.getElementById('natChain').value,
         action: document.getElementById('natAction').value,
@@ -562,9 +577,11 @@ window.saveNatRule = async function() {
         in_interface: document.getElementById('natInInterface').value,
         out_interface: document.getElementById('natOutInterface').value
     };
-    
+
+    console.log('Saving NAT rule:', data);
+
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/nat`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/nat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -573,19 +590,30 @@ window.saveNatRule = async function() {
             },
             body: JSON.stringify(data)
         });
-        
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+        }
+
         const result = await response.json();
+        console.log('Response result:', result);
+
         if (result.success) {
-            showToast(result.message || 'Règle NAT ajoutée avec succès');
+            alert(result.message || 'Règle NAT ajoutée avec succès');
             closeNatModal();
             setTimeout(() => location.reload(), 500);
         } else {
-            showToast(result.message || 'Erreur lors de l\'enregistrement', 'error');
+            alert('Erreur: ' + (result.message || 'Échec de l\'enregistrement'));
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
     } catch (e) {
-        showToast('Erreur: ' + e.message, 'error');
+        console.error('Exception:', e);
+        alert('Erreur: ' + e.message);
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
@@ -644,7 +672,7 @@ window.saveMangleRule = async function() {
     };
     
     try {
-        const response = await fetch(`${BASE_URL}/admin-reseau/routeurs/${routeurId}/firewall/mangle`, {
+        const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/mangle`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
