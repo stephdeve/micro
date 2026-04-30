@@ -20,6 +20,7 @@ use App\Http\Controllers\MikroTikInterfaceController;
 use App\Http\Controllers\MikroTikRouteController;
 use App\Http\Controllers\MikroTikFirewallController;
 use App\Http\Controllers\WifiZoneController;
+use App\Http\Controllers\HotspotController;
 use App\Http\Controllers\EmployeNetworkController;
 
 Route::get('/', function () {
@@ -87,6 +88,20 @@ Route::middleware('auth')->group(function () {
         Route::delete('routeurs/{routeur}/wifi-zones/{wifiZone}', [WifiZoneController::class, 'destroy'])->name('wifi-zones.destroy');
         Route::post('routeurs/{routeur}/wifi-zones/{wifiZone}/toggle', [WifiZoneController::class, 'toggle'])->name('wifi-zones.toggle');
         Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/clients', [WifiZoneController::class, 'refreshClients'])->name('wifi-zones.clients');
+
+        // Hotspot (Portail Captif)
+        Route::get('routeurs/{routeur}/hotspot', [HotspotController::class, 'index'])->name('hotspot');
+        Route::post('routeurs/{routeur}/hotspot/profiles', [HotspotController::class, 'storeProfile'])->name('hotspot.profiles.store');
+        Route::post('routeurs/{routeur}/hotspot/users', [HotspotController::class, 'storeUser'])->name('hotspot.users.store');
+        Route::put('routeurs/{routeur}/hotspot/users/{user}', [HotspotController::class, 'updateUser'])->name('hotspot.users.update');
+        Route::delete('routeurs/{routeur}/hotspot/users/{user}', [HotspotController::class, 'destroyUser'])->name('hotspot.users.destroy');
+        Route::post('routeurs/{routeur}/hotspot/users/{user}/toggle', [HotspotController::class, 'toggleUser'])->name('hotspot.users.toggle');
+        Route::post('routeurs/{routeur}/hotspot/vouchers', [HotspotController::class, 'generateVouchers'])->name('hotspot.vouchers');
+        Route::get('routeurs/{routeur}/hotspot/active-users', [HotspotController::class, 'getActiveUsers'])->name('hotspot.active-users');
+        Route::post('routeurs/{routeur}/hotspot/disconnect', [HotspotController::class, 'disconnectUser'])->name('hotspot.disconnect');
+        // Page de login du portail captif (publique)
+        Route::get('hotspot/{routeur}/login', [HotspotController::class, 'showLogin'])->name('hotspot.login');
+        Route::post('hotspot/{routeur}/login', [HotspotController::class, 'doLogin'])->name('hotspot.login.submit');
 
         // Routes (IP)
         Route::get('routeurs/{routeur}/routes', [AdminReseauController::class, 'routesIndex'])->name('routes');

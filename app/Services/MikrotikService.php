@@ -2073,4 +2073,201 @@ class MikrotikService
             return [];
         }
     }
+
+    // ==================== HOTSPOT ====================
+
+    /**
+     * Créer ou mettre à jour un profil d'utilisateur Hotspot
+     */
+    public function setHotspotUserProfile(
+        Routeur $routeur,
+        string $name,
+        int $sharedUsers = 1,
+        ?string $rateLimit = null,
+        ?string $sessionTimeout = null,
+        ?string $idleTimeout = '00:05:00'
+    ): ?string {
+        try {
+            $client = $this->client($routeur);
+
+            // Vérifier si le profil existe
+            $req = new Request('/ip/hotspot/user/profile/print');
+            $req->setQuery('?name=' . $name);
+            $existing = $client->sendSync($req);
+            $existingId = null;
+            foreach ($existing as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $existingId = $item->getProperty('.id');
+                    break;
+                }
+            }
+
+            if ($existingId) {
+                // Mettre à jour
+                $req = new Request('/ip/hotspot/user/profile/set');
+                $req->setArgument('numbers', $existingId);
+            } else {
+                // Créer
+                $req = new Request('/ip/hotspot/user/profile/add');
+                $req->setArgument('name', $name);
+            }
+
+            $req->setArgument('shared-users', (string)$sharedUsers);
+            if ($rateLimit) {
+                $req->setArgument('rate-limit', $rateLimit);
+            }
+            if ($sessionTimeout) {
+                $req->setArgument('session-timeout', $sessionTimeout);
+            }
+            if ($idleTimeout) {
+                $req->setArgument('idle-timeout', $idleTimeout);
+            }
+
+            $resp = $client->sendSync($req);
+            return $existingId ?? $name;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik setHotspotUserProfile failed', ['routeur_id' => $routeur->id, 'name' => $name, 'error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
+     * Créer ou mettre à jour un utilisateur Hotspot
+     */
+    public function setHotspotUser(
+        Routeur $routeur,
+        string $username,
+        string $password,
+        string $profile = 'default',
+        ?string $macAddress = null,
+        bool $disabled = false,
+        ?int $dataLimit = null,
+        ?string $timeLimit = null
+    ): ?string {
+        try {
+            $client = $this->client($routeur);
+
+            // Vérifier si l'utilisateur existe
+            $req = new Request('/ip/hotspot/user/print');
+            $req->setQuery('?name=' . $username);
+            $existing = $client->sendSync($req);
+            $existingId = null;
+            foreach ($existing as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $existingId = $item->getProperty('.id');
+                    break;
+                }
+            }
+
+            if ($existingId) {
+                // Mettre à jour
+                $req = new Request('/ip/hotspot/user/set');
+                $req->setArgument('numbers', $existingId);
+            } else {
+                // Créer
+                $req = new Request('/ip/hotspot/user/add');
+                $req->setArgument('name', $username);
+            }
+
+            $req->setArgument('password', $password);
+            $req->setArgument('profile', $profile);
+            $req->setArgument('disabled', $disabled ? 'yes' : 'no');
+
+            if ($macAddress) {
+                $req->setArgument('mac-address', $macAddress);
+            }
+
+            $client->sendSync($req);
+            return $existingId ?? $username;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik setHotspotUser failed', ['routeur_id' => $routeur->id, 'username' => $username, 'error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
+     * Supprimer un utilisateur Hotspot
+     */
+    public function removeHotspotUser(Routeur $routeur, string $identifier): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            $req = new Request('/ip/hotspot/user/remove');
+            $req->setArgument('numbers', $identifier);
+            $client->sendSync($req);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik removeHotspotUser failed', ['routeur_id' => $routeur->id, 'identifier' => $identifier, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Récupérer les utilisateurs Hotspot actifs
+     */
+    public function getHotspotActiveUsers(Routeur $routeur): array
+    {
+        try {
+            $client = $this->client($routeur);
+            $req = new Request('/ip/hotspot/active/print');
+            $resp = $client->sendSync($req);
+
+            $users = [];
+            foreach ($resp as $item) {
+                if (!$item instanceof \PEAR2\Net\RouterOS\Response) continue;
+                $users[] = [
+                    'id' => $item->getProperty('.id'),
+                    'user' => $item->getProperty('user'),
+                    'mac_address' => $item->getProperty('mac-address'),
+                    'address' => $item->getProperty('address'),
+                    'uptime' => $item->getProperty('uptime'),
+                    'idle_time' => $item->getProperty('idle-time'),
+                    'bytes_in' => $item->getProperty('bytes-in'),
+                    'bytes_out' => $item->getProperty('bytes-out'),
+                    'packets_in' => $item->getProperty('packets-in'),
+                    'packets_out' => $item->getProperty('packets-out'),
+                    'login_by' => $item->getProperty('login-by'),
+                    'server' => $item->getProperty('server'),
+                ];
+            }
+            return $users;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik getHotspotActiveUsers failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return [];
+        }
+    }
+
+    /**
+     * Déconnecter un utilisateur Hotspot actif
+     */
+    public function disconnectHotspotUser(Routeur $routeur, string $username): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Trouver l'entrée active par nom d'utilisateur
+            $req = new Request('/ip/hotspot/active/print');
+            $req->setQuery('?user=' . $username);
+            $resp = $client->sendSync($req);
+            
+            $activeId = null;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $activeId = $item->getProperty('.id');
+                    break;
+                }
+            }
+            
+            if ($activeId) {
+                $req = new Request('/ip/hotspot/active/remove');
+                $req->setArgument('numbers', $activeId);
+                $client->sendSync($req);
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik disconnectHotspotUser failed', ['routeur_id' => $routeur->id, 'username' => $username, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
 }

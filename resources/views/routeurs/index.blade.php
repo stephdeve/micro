@@ -241,6 +241,9 @@ $statusLabels = [
                     <a href="{{ route('admin-reseau.wifi-zones', $routeur) }}" class="px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-sm transition" title="WiFi">
                         <i class="fas fa-wifi"></i>
                     </a>
+                    <a href="{{ route('admin-reseau.hotspot', $routeur) }}" class="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg text-sm transition" title="Hotspot">
+                        <i class="fas fa-unlock-alt"></i>
+                    </a>
                 </div>
             </div>
         </div>
@@ -309,6 +312,9 @@ $statusLabels = [
                                 </button>
                                 <a href="{{ route('admin-reseau.interfaces', $routeur) }}" class="p-2 hover:bg-indigo-500/20 rounded-lg text-indigo-400 transition" title="Interfaces">
                                     <i class="fas fa-ethernet"></i>
+                                </a>
+                                <a href="{{ route('admin-reseau.hotspot', $routeur) }}" class="p-2 hover:bg-purple-500/20 rounded-lg text-purple-400 transition" title="Hotspot">
+                                    <i class="fas fa-unlock-alt"></i>
                                 </a>
                                 <button onclick="deleteRouteur({{ $routeur->id }})" class="p-2 hover:bg-rose-500/20 rounded-lg text-slate-400 hover:text-rose-400 transition" title="Supprimer">
                                     <i class="fas fa-trash"></i>

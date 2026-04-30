@@ -54,6 +54,16 @@ class Routeur extends Model
         return $this->hasMany(WifiZone::class);
     }
 
+    public function hotspotProfiles()
+    {
+        return $this->hasMany(HotspotProfile::class);
+    }
+
+    public function hotspotUsers()
+    {
+        return $this->hasMany(HotspotUser::class);
+    }
+
     public function employes()
     {
         return $this->hasMany(Employe::class);
