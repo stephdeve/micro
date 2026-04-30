@@ -4,64 +4,140 @@
 
 @section('content')
 <div class="p-4 md:p-6 space-y-6 max-w-[1600px] mx-auto">
-    
+
     <!-- Toast Notifications Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
-    <!-- Header -->
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-800/80 to-slate-900/80 border border-slate-700/50 backdrop-blur-sm">
-        <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                <i class="fas fa-shield-alt text-2xl text-white"></i>
+    <!-- Header Moderne avec Stats -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 border border-slate-700/50 backdrop-blur-xl">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-cyan-500/5 via-transparent to-transparent"></div>
+
+        <div class="relative p-6 md:p-8">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <!-- Titre et Info -->
+                <div class="flex items-center gap-5">
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-indigo-500/30 ring-4 ring-slate-950/50">
+                            <i class="fas fa-shield-alt text-3xl text-white drop-shadow-lg"></i>
+                        </div>
+                        <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center">
+                            <i class="fas fa-check text-[10px] text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white tracking-tight">
+                            Pare-feu
+                            <span class="bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">{{ $routeur->nom }}</span>
+                        </h1>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-300 font-medium">
+                                <i class="fas fa-network-wired mr-1.5 text-cyan-400"></i>{{ $routeur->adresse_ip }}
+                            </span>
+                            <span class="px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-300">
+                                Gestion des règles réseau
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/80 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                                <i class="fas fa-filter text-cyan-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">Filter</p>
+                                <p class="text-lg font-bold text-white">{{ count($groupedFilters['INPUT'] ?? []) + count($groupedFilters['FORWARD'] ?? []) + count($groupedFilters['OUTPUT'] ?? []) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/80 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                <i class="fas fa-exchange-alt text-emerald-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">NAT</p>
+                                <p class="text-lg font-bold text-white">{{ count($natRules) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/80 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                                <i class="fas fa-tags text-amber-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400">Mangle</p>
+                                <p class="text-lg font-bold text-white">{{ count($mangleRules) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <h1 class="text-2xl font-bold text-white">Pare-feu <span class="text-indigo-400">{{ $routeur->nom }}</span></h1>
-                <p class="text-sm text-slate-400 flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded-full bg-slate-700 text-xs">{{ $routeur->adresse_ip }}</span>
-                    <span>Gestion des règles réseau</span>
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2">
-            <a href="{{ route('routeurs.show', $routeur) }}" class="px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-all">
-                <i class="fas fa-info-circle mr-2"></i>Détails
-            </a>
-            <a href="{{ route('routeurs.index') }}" class="px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-all">
-                <i class="fas fa-arrow-left mr-2"></i>Retour
-            </a>
         </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div class="flex p-1 rounded-xl bg-slate-800/50 border border-slate-700/50">
-            <a href="?tab=filter" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all {{ $tab === 'filter' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-400 hover:text-white' }}">
-                <i class="fas fa-filter"></i>
-                <span>Filter</span>
+    <!-- Onglets Modernes avec Barre d'outils -->
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <!-- Tabs -->
+        <div class="flex p-1.5 rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm">
+            <a href="?tab=filter" class="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ $tab === 'filter' ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/25' : 'text-slate-400 hover:text-white hover:bg-slate-700/50' }}">
+                <div class="w-8 h-8 rounded-lg {{ $tab === 'filter' ? 'bg-white/20' : 'bg-cyan-500/20' }} flex items-center justify-center transition-all">
+                    <i class="fas fa-filter {{ $tab === 'filter' ? 'text-white' : 'text-cyan-400' }}"></i>
+                </div>
+                <div class="flex flex-col items-start">
+                    <span>Filter</span>
+                    <span class="text-[10px] {{ $tab === 'filter' ? 'text-cyan-100' : 'text-slate-500' }}">{{ count($groupedFilters['INPUT'] ?? []) + count($groupedFilters['FORWARD'] ?? []) + count($groupedFilters['OUTPUT'] ?? []) }} règles</span>
+                </div>
             </a>
-            <a href="?tab=nat" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all {{ $tab === 'nat' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-white' }}">
-                <i class="fas fa-exchange-alt"></i>
-                <span>NAT</span>
+            <a href="?tab=nat" class="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ $tab === 'nat' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25' : 'text-slate-400 hover:text-white hover:bg-slate-700/50' }}">
+                <div class="w-8 h-8 rounded-lg {{ $tab === 'nat' ? 'bg-white/20' : 'bg-emerald-500/20' }} flex items-center justify-center transition-all">
+                    <i class="fas fa-exchange-alt {{ $tab === 'nat' ? 'text-white' : 'text-emerald-400' }}"></i>
+                </div>
+                <div class="flex flex-col items-start">
+                    <span>NAT</span>
+                    <span class="text-[10px] {{ $tab === 'nat' ? 'text-emerald-100' : 'text-slate-500' }}">{{ count($natRules) }} règles</span>
+                </div>
             </a>
-            <a href="?tab=mangle" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all {{ $tab === 'mangle' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-white' }}">
-                <i class="fas fa-tags"></i>
-                <span>Mangle</span>
+            <a href="?tab=mangle" class="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ $tab === 'mangle' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/25' : 'text-slate-400 hover:text-white hover:bg-slate-700/50' }}">
+                <div class="w-8 h-8 rounded-lg {{ $tab === 'mangle' ? 'bg-white/20' : 'bg-amber-500/20' }} flex items-center justify-center transition-all">
+                    <i class="fas fa-tags {{ $tab === 'mangle' ? 'text-white' : 'text-amber-400' }}"></i>
+                </div>
+                <div class="flex flex-col items-start">
+                    <span>Mangle</span>
+                    <span class="text-[10px] {{ $tab === 'mangle' ? 'text-amber-100' : 'text-slate-500' }}">{{ count($mangleRules) }} règles</span>
+                </div>
             </a>
         </div>
-        
-        @if($tab === 'filter')
-            <button type="button" onclick="openFilterModal()" class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20">
-                <i class="fas fa-plus"></i>Ajouter règle
-            </button>
-        @elseif($tab === 'nat')
-            <button type="button" onclick="openNatModal()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
-                <i class="fas fa-plus"></i>Ajouter NAT
-            </button>
-        @else
-            <button type="button" onclick="openMangleModal()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20">
-                <i class="fas fa-plus"></i>Ajouter Mangle
-            </button>
-        @endif
+
+        <!-- Barre de recherche et bouton -->
+        <div class="flex items-center gap-3 w-full lg:w-auto">
+            <div class="relative flex-1 lg:w-64">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchRules" placeholder="Rechercher une règle..." class="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all">
+            </div>
+
+            @if($tab === 'filter')
+                <button type="button" onclick="openFilterModal()" class="group px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-white text-sm font-semibold transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 hover:scale-105 active:scale-95">
+                    <i class="fas fa-plus group-hover:rotate-90 transition-transform"></i>
+                    <span class="hidden sm:inline">Ajouter règle</span>
+                </button>
+            @elseif($tab === 'nat')
+                <button type="button" onclick="openNatModal()" class="group px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white text-sm font-semibold transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-105 active:scale-95">
+                    <i class="fas fa-plus group-hover:rotate-90 transition-transform"></i>
+                    <span class="hidden sm:inline">Ajouter NAT</span>
+                </button>
+            @else
+                <button type="button" onclick="openMangleModal()" class="group px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white text-sm font-semibold transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 hover:scale-105 active:scale-95">
+                    <i class="fas fa-plus group-hover:rotate-90 transition-transform"></i>
+                    <span class="hidden sm:inline">Ajouter Mangle</span>
+                </button>
+            @endif
+        </div>
     </div>
 
     <!-- Content -->
@@ -652,7 +728,7 @@ window.saveMangleRule = async function() {
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
-    
+
     const data = {
         chain: document.getElementById('mangleChain').value,
         action: document.getElementById('mangleAction').value,
@@ -670,7 +746,9 @@ window.saveMangleRule = async function() {
         priority: document.getElementById('manglePriority').value,
         passthrough: document.getElementById('manglePassthrough').checked
     };
-    
+
+    console.log('Saving mangle rule:', data);
+
     try {
         const response = await fetch(`${BASE_URL}/routeurs/${routeurId}/firewall/mangle`, {
             method: 'POST',
@@ -681,22 +759,59 @@ window.saveMangleRule = async function() {
             },
             body: JSON.stringify(data)
         });
-        
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+        }
+
         const result = await response.json();
+        console.log('Response result:', result);
+
         if (result.success) {
-            showToast(result.message || 'Règle Mangle ajoutée avec succès');
+            alert(result.message || 'Règle Mangle ajoutée avec succès');
             closeMangleModal();
             setTimeout(() => location.reload(), 500);
         } else {
-            showToast(result.message || 'Erreur lors de l\'enregistrement', 'error');
+            alert('Erreur: ' + (result.message || 'Échec de l\'enregistrement'));
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
     } catch (e) {
-        showToast('Erreur: ' + e.message, 'error');
+        console.error('Exception:', e);
+        alert('Erreur: ' + e.message);
         btn.disabled = false;
         btn.innerHTML = originalText;
     }
 };
+
+// Search functionality
+document.getElementById('searchRules')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const ruleCards = document.querySelectorAll('[data-id]');
+
+    ruleCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            card.style.display = '';
+            card.style.opacity = '1';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Show/hide empty chain sections
+    document.querySelectorAll('.space-y-6 > div, .space-y-4 > div').forEach(section => {
+        const visibleCards = section.querySelectorAll('[data-id]:not([style*="display: none"])');
+        if (visibleCards.length === 0 && searchTerm !== '') {
+            section.style.display = 'none';
+        } else {
+            section.style.display = '';
+        }
+    });
+});
 </script>
 @endsection

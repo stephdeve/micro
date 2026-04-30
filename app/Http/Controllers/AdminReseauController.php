@@ -121,8 +121,31 @@ class AdminReseauController extends Controller
         $tab = $request->input('tab', 'filter');
         $rules = $service->getFirewallRules($routeur);
         $natRules = $service->getNatRules($routeur);
+        $mangleRules = $service->getMangleRules($routeur);
 
-        return view('reseau.firewall', compact('routeur', 'tab', 'rules', 'natRules'));
+        \Log::info('Firewall rules fetched', [
+            'routeur_id' => $routeur->id,
+            'rules_count' => count($rules),
+            'nat_count' => count($natRules),
+            'mangle_count' => count($mangleRules),
+            'tab' => $tab
+        ]);
+
+        // Grouper les règles Filter par chaîne (normaliser en majuscules)
+        $groupedFilters = [
+            'INPUT' => [],
+            'OUTPUT' => [],
+            'FORWARD' => []
+        ];
+        foreach ($rules as $rule) {
+            $chain = strtoupper($rule['chain'] ?? 'FORWARD');
+            if (!isset($groupedFilters[$chain])) {
+                $groupedFilters[$chain] = [];
+            }
+            $groupedFilters[$chain][] = $rule;
+        }
+
+        return view('reseau.firewall', compact('routeur', 'tab', 'groupedFilters', 'natRules', 'mangleRules'));
     }
 
     public function firewallStore(Request $request, Routeur $routeur)
