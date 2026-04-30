@@ -2270,4 +2270,300 @@ class MikrotikService
             return false;
         }
     }
+
+    /**
+     * Configurer le serveur Hotspot avec une page de login externe
+     */
+    public function configureHotspotServer(Routeur $routeur, string $interface, string $loginPageUrl, string $serverName = 'hotspot1'): array
+    {
+        try {
+            $client = $this->client($routeur);
+            $results = ['success' => true, 'steps' => []];
+
+            // 1. Vérifier si le serveur existe déjà
+            $req = new Request('/ip/hotspot/print');
+            $resp = $client->sendSync($req);
+            
+            $existingId = null;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    if ($item->getProperty('name') === $serverName) {
+                        $existingId = $item->getProperty('.id');
+                        break;
+                    }
+                }
+            }
+
+            // 2. Configurer le profil Hotspot avec l'URL de login externe
+            $profileReq = new Request('/ip/hotspot/profile/print');
+            $profileResp = $client->sendSync($profileReq);
+            
+            $profileId = null;
+            foreach ($profileResp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    if ($item->getProperty('name') === 'hsprof-' . $serverName) {
+                        $profileId = $item->getProperty('.id');
+                        break;
+                    }
+                }
+            }
+
+            if ($profileId) {
+                // Mettre à jour le profil existant
+                $updateReq = new Request('/ip/hotspot/profile/set');
+                $updateReq->setArgument('numbers', $profileId);
+                $updateReq->setArgument('login-by', 'http-chap,trial');
+                $updateReq->setArgument('html-directory', 'hotspot');
+                $client->sendSync($updateReq);
+                $results['steps'][] = 'Profil hotspot mis à jour';
+            }
+
+            // 3. Configurer la redirection vers la page externe via Walled Garden
+            // Autoriser d'abord l'accès à notre serveur
+            $this->addWalledGardenEntry($routeur, $loginPageUrl, 'allow');
+            $results['steps'][] = 'Walled Garden configuré pour: ' . $loginPageUrl;
+
+            // 4. Créer ou mettre à jour le serveur Hotspot
+            if ($existingId) {
+                $setReq = new Request('/ip/hotspot/set');
+                $setReq->setArgument('numbers', $existingId);
+                $setReq->setArgument('interface', $interface);
+                $setReq->setArgument('addresses-per-mac', '2');
+                $client->sendSync($setReq);
+                $results['steps'][] = 'Serveur hotspot existant mis à jour';
+            } else {
+                // Créer le serveur hotspot
+                $addReq = new Request('/ip/hotspot/add');
+                $addReq->setArgument('name', $serverName);
+                $addReq->setArgument('interface', $interface);
+                $addReq->setArgument('address-pool', 'hs-pool-' . $serverName);
+                $addReq->setArgument('addresses-per-mac', '2');
+                $addReq->setArgument('idle-timeout', '5m');
+                $addReq->setArgument('keepalive-timeout', '15m');
+                $client->sendSync($addReq);
+                $results['steps'][] = 'Nouveau serveur hotspot créé';
+            }
+
+            // 5. Configurer le hotspot walled-garden pour notre URL
+            $this->configureWalledGardenForExternalLogin($routeur, $loginPageUrl);
+            $results['steps'][] = 'Walled Garden IP configuré';
+
+            // 6. Configurer le DNS statique pour le domaine si nécessaire
+            $this->configureHotspotDNS($routeur, $loginPageUrl);
+            $results['steps'][] = 'DNS configuré';
+
+            return $results;
+
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik configureHotspotServer failed', [
+                'routeur_id' => $routeur->id, 
+                'interface' => $interface,
+                'error' => $e->getMessage()
+            ]);
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Ajouter une entrée Walled Garden
+     */
+    private function addWalledGardenEntry(Routeur $routeur, string $url, string $action = 'allow'): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Extraire le domaine de l'URL
+            $parsedUrl = parse_url($url);
+            $host = $parsedUrl['host'] ?? $url;
+            
+            // Vérifier si l'entrée existe déjà
+            $req = new Request('/ip/hotspot/walled-garden/print');
+            $resp = $client->sendSync($req);
+            
+            $exists = false;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    if ($item->getProperty('dst-host') === $host) {
+                        $exists = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!$exists) {
+                $addReq = new Request('/ip/hotspot/walled-garden/add');
+                $addReq->setArgument('dst-host', $host);
+                $addReq->setArgument('action', $action);
+                $client->sendSync($addReq);
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik addWalledGardenEntry failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Configurer Walled Garden pour login externe
+     */
+    private function configureWalledGardenForExternalLogin(Routeur $routeur, string $loginUrl): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Extraire l'IP du serveur de l'URL si c'est une IP
+            $parsedUrl = parse_url($loginUrl);
+            $host = $parsedUrl['host'] ?? '';
+            
+            // Si c'est une IP, ajouter aux IP allowed
+            if (filter_var($host, FILTER_VALIDATE_IP)) {
+                // Ajouter l'IP au walled-garden ip
+                $req = new Request('/ip/hotspot/walled-garden/ip/print');
+                $resp = $client->sendSync($req);
+                
+                $exists = false;
+                foreach ($resp as $item) {
+                    if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                        if ($item->getProperty('dst-address') === $host) {
+                            $exists = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!$exists) {
+                    $addReq = new Request('/ip/hotspot/walled-garden/ip/add');
+                    $addReq->setArgument('dst-address', $host);
+                    $addReq->setArgument('action', 'accept');
+                    $client->sendSync($addReq);
+                }
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik configureWalledGardenForExternalLogin failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Configurer le DNS pour le hotspot
+     */
+    private function configureHotspotDNS(Routeur $routeur, string $loginUrl): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Parser l'URL
+            $parsedUrl = parse_url($loginUrl);
+            $host = $parsedUrl['host'] ?? '';
+            
+            // Si ce n'est pas une IP, ajouter un enregistrement DNS statique
+            if (!filter_var($host, FILTER_VALIDATE_IP)) {
+                // Résoudre l'IP du serveur
+                $ip = gethostbyname($host);
+                
+                if ($ip && $ip !== $host) {
+                    // Vérifier si l'entrée existe déjà
+                    $req = new Request('/ip/dns/static/print');
+                    $resp = $client->sendSync($req);
+                    
+                    $exists = false;
+                    foreach ($resp as $item) {
+                        if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                            if ($item->getProperty('name') === $host) {
+                                $exists = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!$exists) {
+                        $addReq = new Request('/ip/dns/static/add');
+                        $addReq->setArgument('name', $host);
+                        $addReq->setArgument('address', $ip);
+                        $client->sendSync($addReq);
+                    }
+                }
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik configureHotspotDNS failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Récupérer la configuration actuelle du serveur Hotspot
+     */
+    public function getHotspotServerConfig(Routeur $routeur): array
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Récupérer les serveurs
+            $req = new Request('/ip/hotspot/print');
+            $resp = $client->sendSync($req);
+            
+            $servers = [];
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $servers[] = [
+                        'id' => $item->getProperty('.id'),
+                        'name' => $item->getProperty('name'),
+                        'interface' => $item->getProperty('interface'),
+                        'address_pool' => $item->getProperty('address-pool'),
+                        'profile' => $item->getProperty('profile'),
+                        'idle_timeout' => $item->getProperty('idle-timeout'),
+                        'keepalive_timeout' => $item->getProperty('keepalive-timeout'),
+                        'disabled' => $item->getProperty('disabled') === 'true',
+                    ];
+                }
+            }
+            
+            // Récupérer les profils
+            $profileReq = new Request('/ip/hotspot/profile/print');
+            $profileResp = $client->sendSync($profileReq);
+            
+            $profiles = [];
+            foreach ($profileResp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $profiles[] = [
+                        'id' => $item->getProperty('.id'),
+                        'name' => $item->getProperty('name'),
+                        'hotspot_address' => $item->getProperty('hotspot-address'),
+                        'html_directory' => $item->getProperty('html-directory'),
+                        'login_by' => $item->getProperty('login-by'),
+                        'smtp_server' => $item->getProperty('smtp-server'),
+                    ];
+                }
+            }
+            
+            // Récupérer les entrées walled-garden
+            $wgReq = new Request('/ip/hotspot/walled-garden/print');
+            $wgResp = $client->sendSync($wgReq);
+            
+            $walledGarden = [];
+            foreach ($wgResp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $walledGarden[] = [
+                        'id' => $item->getProperty('.id'),
+                        'dst_host' => $item->getProperty('dst-host'),
+                        'action' => $item->getProperty('action'),
+                    ];
+                }
+            }
+            
+            return [
+                'servers' => $servers,
+                'profiles' => $profiles,
+                'walled_garden' => $walledGarden,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik getHotspotServerConfig failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return [];
+        }
+    }
 }

@@ -312,6 +312,42 @@ class HotspotController extends Controller
     }
 
     /**
+     * Configurer le serveur Hotspot sur le routeur MikroTik
+     */
+    public function configureServer(Request $request, Routeur $routeur)
+    {
+        $validated = $request->validate([
+            'interface' => 'required|string',
+            'server_name' => 'nullable|string|max:50',
+        ]);
+
+        if ($routeur->statut !== 'en_ligne') {
+            return redirect()->route('hotspot', $routeur)
+                ->with('error', 'Le routeur doit être en ligne pour configurer le Hotspot');
+        }
+
+        // Construire l'URL de la page de login
+        $loginUrl = route('hotspot.login', $routeur);
+        
+        // Configurer le serveur sur MikroTik
+        $result = $this->mikrotik->configureHotspotServer(
+            $routeur,
+            $validated['interface'],
+            $loginUrl,
+            $validated['server_name'] ?? 'hotspot1'
+        );
+
+        if ($result['success']) {
+            $steps = implode(', ', $result['steps']);
+            return redirect()->route('hotspot', $routeur)
+                ->with('success', 'Serveur Hotspot configuré avec succès. Étapes: ' . $steps);
+        } else {
+            return redirect()->route('hotspot', $routeur)
+                ->with('error', 'Erreur configuration: ' . ($result['error'] ?? 'Inconnue'));
+        }
+    }
+
+    /**
      * Afficher la page de login du portail captif (publique)
      */
     public function showLogin(Routeur $routeur)

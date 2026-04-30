@@ -76,6 +76,58 @@
         </div>
     </div>
 
+    {{-- Configuration Serveur Hotspot --}}
+    <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                    <i class="fas fa-cog text-indigo-400 text-lg"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-white">Configuration du Serveur Hotspot</h2>
+                    <p class="text-sm text-slate-400">Configurer le routeur MikroTik pour utiliser le portail captif externe</p>
+                </div>
+            </div>
+            <button onclick="openModal('configureServer')" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-sm font-medium rounded-xl transition-all inline-flex items-center gap-2">
+                <i class="fas fa-play"></i> Configurer le serveur
+            </button>
+        </div>
+
+        {{-- Configuration Info --}}
+        <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
+            <div class="flex items-start gap-3 mb-3">
+                <i class="fas fa-info-circle text-cyan-400 mt-1"></i>
+                <div>
+                    <h4 class="text-sm font-medium text-white mb-2">URL du portail captif</h4>
+                    <code class="block bg-slate-950 p-3 rounded-lg text-emerald-400 text-sm break-all">
+                        {{ route('hotspot.login', $routeur) }}
+                    </code>
+                </div>
+            </div>
+            <div class="flex items-start gap-3">
+                <i class="fas fa-terminal text-amber-400 mt-1"></i>
+                <div class="flex-1">
+                    <h4 class="text-sm font-medium text-white mb-2">Configuration manuelle (RouterOS)</h4>
+                    <div class="bg-slate-950 rounded-lg p-3 font-mono text-xs text-slate-300 space-y-1 overflow-x-auto">
+                        <div class="text-slate-500"># 1. Créer le profil Hotspot</div>
+                        <div>/ip hotspot profile</div>
+                        <div>add name=hsprof1 login-by=http-chap html-directory=hotspot</div>
+                        <div class="text-slate-500 mt-2"># 2. Créer le serveur Hotspot</div>
+                        <div>/ip hotspot</div>
+                        <div>add name=hotspot1 interface=bridge1 profile=hsprof1 addresses-per-mac=2</div>
+                        <div class="text-slate-500 mt-2"># 3. Autoriser l'URL du portail (Walled Garden)</div>
+                        <div>/ip hotspot walled-garden</div>
+                        <div>add dst-host=192.168.1.100 action=allow</div>
+                        <div>/ip hotspot walled-garden ip</div>
+                        <div>add dst-address=192.168.1.100 action=accept</div>
+                        <div class="text-slate-500 mt-2"># 4. Définir la page de login externe</div>
+                        <div>/ip hotspot profile set hsprof1 login-url="{{ route('hotspot.login', $routeur) }}"</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Tabs --}}
     <div class="border-b border-slate-700">
         <div class="flex gap-2">
@@ -403,6 +455,42 @@
                 <button type="button" onclick="closeModal('vouchers')" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition-colors">Annuler</button>
                 <button type="submit" class="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white transition-all">
                     <i class="fas fa-magic mr-2"></i>Générer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal: Configure Server --}}
+<div id="modal-configureServer" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-lg w-full">
+        <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-white"><i class="fas fa-cog mr-2 text-indigo-400"></i>Configurer le Serveur Hotspot</h3>
+            <button onclick="closeModal('configureServer')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        <form action="{{ route('admin-reseau.hotspot.configure', $routeur) }}" method="POST" class="p-6 space-y-4">
+            @csrf
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Interface *</label>
+                <input type="text" name="interface" required placeholder="ex: bridge1, wlan1, ether2" 
+                       class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-indigo-500 focus:outline-none">
+                <p class="text-xs text-slate-500 mt-1">Interface sur laquelle activer le Hotspot</p>
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Nom du serveur</label>
+                <input type="text" name="server_name" value="hotspot1" 
+                       class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:border-indigo-500 focus:outline-none">
+            </div>
+            <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                <p class="text-xs text-amber-400">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Cette configuration va créer/modifier le serveur Hotspot sur le routeur MikroTik.
+                </p>
+            </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button type="button" onclick="closeModal('configureServer')" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition-colors">Annuler</button>
+                <button type="submit" class="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white transition-all">
+                    <i class="fas fa-play mr-2"></i>Configurer
                 </button>
             </div>
         </form>

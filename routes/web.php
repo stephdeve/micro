@@ -99,6 +99,7 @@ Route::middleware('auth')->group(function () {
         Route::post('routeurs/{routeur}/hotspot/vouchers', [HotspotController::class, 'generateVouchers'])->name('hotspot.vouchers');
         Route::get('routeurs/{routeur}/hotspot/active-users', [HotspotController::class, 'getActiveUsers'])->name('hotspot.active-users');
         Route::post('routeurs/{routeur}/hotspot/disconnect', [HotspotController::class, 'disconnectUser'])->name('hotspot.disconnect');
+        Route::post('routeurs/{routeur}/hotspot/configure', [HotspotController::class, 'configureServer'])->name('hotspot.configure');
         // Page de login du portail captif (publique)
         Route::get('hotspot/{routeur}/login', [HotspotController::class, 'showLogin'])->name('hotspot.login');
         Route::post('hotspot/{routeur}/login', [HotspotController::class, 'doLogin'])->name('hotspot.login.submit');
