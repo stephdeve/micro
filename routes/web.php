@@ -27,6 +27,11 @@ Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
 
+// Hotspot - Portail Captif (routes publiques)
+Route::get('hotspot/{routeur}/instructions', [HotspotController::class, 'showInstructions'])->name('hotspot.instructions');
+Route::get('hotspot/{routeur}/login', [HotspotController::class, 'showLogin'])->name('hotspot.login');
+Route::post('hotspot/{routeur}/login', [HotspotController::class, 'doLogin'])->name('hotspot.login.submit');
+
 // Routes protégées par authentification
 Route::middleware('auth')->group(function () {
     // Dashboard (redirige selon le rôle)
@@ -100,9 +105,6 @@ Route::middleware('auth')->group(function () {
         Route::get('routeurs/{routeur}/hotspot/active-users', [HotspotController::class, 'getActiveUsers'])->name('hotspot.active-users');
         Route::post('routeurs/{routeur}/hotspot/disconnect', [HotspotController::class, 'disconnectUser'])->name('hotspot.disconnect');
         Route::post('routeurs/{routeur}/hotspot/configure', [HotspotController::class, 'configureServer'])->name('hotspot.configure');
-        // Page de login du portail captif (publique)
-        Route::get('hotspot/{routeur}/login', [HotspotController::class, 'showLogin'])->name('hotspot.login');
-        Route::post('hotspot/{routeur}/login', [HotspotController::class, 'doLogin'])->name('hotspot.login.submit');
 
         // Routes (IP)
         Route::get('routeurs/{routeur}/routes', [AdminReseauController::class, 'routesIndex'])->name('routes');

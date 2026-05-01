@@ -69,7 +69,7 @@ class HotspotController extends Controller
             $this->syncProfileToMikrotik($routeur, $profile);
         }
 
-        return redirect()->route('hotspot', $routeur)
+        return redirect()->route('admin-reseau.hotspot', $routeur)
             ->with('success', 'Profil Hotspot créé avec succès');
     }
 
@@ -122,7 +122,7 @@ class HotspotController extends Controller
             $this->syncUserToMikrotik($routeur, $user);
         }
 
-        return redirect()->route('hotspot', $routeur)
+        return redirect()->route('admin-reseau.hotspot', $routeur)
             ->with('success', 'Utilisateur Hotspot "' . $user->username . '" créé avec succès. Mot de passe: ' . $password);
     }
 
@@ -151,7 +151,7 @@ class HotspotController extends Controller
             $this->syncUserToMikrotik($routeur, $user);
         }
 
-        return redirect()->route('hotspot', $routeur)
+        return redirect()->route('admin-reseau.hotspot', $routeur)
             ->with('success', 'Utilisateur "' . $user->username . '" mis à jour');
     }
 
@@ -169,7 +169,7 @@ class HotspotController extends Controller
 
         $user->delete();
 
-        return redirect()->route('hotspot', $routeur)
+        return redirect()->route('admin-reseau.hotspot', $routeur)
             ->with('success', 'Utilisateur "' . $username . '" supprimé');
     }
 
@@ -186,7 +186,7 @@ class HotspotController extends Controller
         }
 
         $status = $user->disabled ? 'désactivé' : 'activé';
-        return redirect()->route('hotspot', $routeur)
+        return redirect()->route('admin-reseau.hotspot', $routeur)
             ->with('success', 'Utilisateur "' . $user->username . '" ' . $status);
     }
 
@@ -232,7 +232,7 @@ class HotspotController extends Controller
             }
         }
 
-        return redirect()->route('hotspot', $routeur)
+        return redirect()->route('admin-reseau.hotspot', $routeur)
             ->with('success', $quantity . ' vouchers générés avec succès');
     }
 
@@ -322,7 +322,7 @@ class HotspotController extends Controller
         ]);
 
         if ($routeur->statut !== 'en_ligne') {
-            return redirect()->route('hotspot', $routeur)
+            return redirect()->route('admin-reseau.hotspot', $routeur)
                 ->with('error', 'Le routeur doit être en ligne pour configurer le Hotspot');
         }
 
@@ -339,12 +339,20 @@ class HotspotController extends Controller
 
         if ($result['success']) {
             $steps = implode(', ', $result['steps']);
-            return redirect()->route('hotspot', $routeur)
+            return redirect()->route('admin-reseau.hotspot', $routeur)
                 ->with('success', 'Serveur Hotspot configuré avec succès. Étapes: ' . $steps);
         } else {
-            return redirect()->route('hotspot', $routeur)
+            return redirect()->route('admin-reseau.hotspot', $routeur)
                 ->with('error', 'Erreur configuration: ' . ($result['error'] ?? 'Inconnue'));
         }
+    }
+
+    /**
+     * Afficher les instructions de connexion pour les employés
+     */
+    public function showInstructions(Routeur $routeur)
+    {
+        return view('hotspot.instructions', compact('routeur'));
     }
 
     /**

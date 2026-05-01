@@ -10,7 +10,9 @@ class WifiZone extends Model
 {
     protected $fillable = [
         'routeur_id', 'nom', 'ssid', 'password', 'security_profile',
-        'bandwidth_down', 'bandwidth_up', 'quota_monthly', 'vlan_id',
+        'bandwidth_down', 'bandwidth_up', 'per_user_down', 'per_user_up',
+        'quota_monthly', 'vlan_id', 'network_address', 'gateway',
+        'dhcp_pool_start', 'dhcp_pool_end',
         'schedule_start', 'schedule_end', 'schedule_days',
         'client_isolation', 'max_clients', 'frequency_band',
         'wifi_interface_name', 'active', 'commentaire'

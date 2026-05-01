@@ -284,7 +284,71 @@
                     </div>
                 </div>
 
-                <!-- Section 3: Options avancées -->
+                <!-- Section 3: Configuration IP et DHCP -->
+                <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 rounded bg-indigo-500/20 flex items-center justify-center">
+                            <i class="fas fa-network-wired text-indigo-400 text-xs"></i>
+                        </div>
+                        <h4 class="font-semibold text-white text-sm">Configuration IP</h4>
+                        <span class="ml-auto text-[10px] text-slate-500">ex: 192.168.20.0/24</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label for="network_address" class="text-xs font-medium text-slate-300">Réseau CIDR</label>
+                            <input type="text" id="network_address" name="network_address"
+                                   class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
+                                   placeholder="192.168.20.0/24">
+                        </div>
+                        <div class="space-y-1">
+                            <label for="gateway" class="text-xs font-medium text-slate-300">Gateway</label>
+                            <input type="text" id="gateway" name="gateway"
+                                   class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
+                                   placeholder="192.168.20.1">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div class="space-y-1">
+                            <label for="dhcp_pool_start" class="text-xs font-medium text-slate-300">DHCP Début</label>
+                            <input type="text" id="dhcp_pool_start" name="dhcp_pool_start"
+                                   class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
+                                   placeholder="192.168.20.10">
+                        </div>
+                        <div class="space-y-1">
+                            <label for="dhcp_pool_end" class="text-xs font-medium text-slate-300">DHCP Fin</label>
+                            <input type="text" id="dhcp_pool_end" name="dhcp_pool_end"
+                                   class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
+                                   placeholder="192.168.20.254">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Bande passante par utilisateur -->
+                <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 rounded bg-pink-500/20 flex items-center justify-center">
+                            <i class="fas fa-user-clock text-pink-400 text-xs"></i>
+                        </div>
+                        <h4 class="font-semibold text-white text-sm">Bande passante par personne</h4>
+                        <span class="ml-auto text-[10px] text-slate-500">0 = illimité</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label for="per_user_down" class="text-xs font-medium text-slate-300">Download/personne</label>
+                            <input type="number" id="per_user_down" name="per_user_down" min="0"
+                                   class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/20"
+                                   placeholder="ex: 5 (Mbps)">
+                        </div>
+                        <div class="space-y-1">
+                            <label for="per_user_up" class="text-xs font-medium text-slate-300">Upload/personne</label>
+                            <input type="number" id="per_user_up" name="per_user_up" min="0"
+                                   class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/20"
+                                   placeholder="ex: 2 (Mbps)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Options avancées -->
                 <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-6 h-6 rounded bg-purple-500/20 flex items-center justify-center">

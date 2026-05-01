@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.hotspot')
 
 @section('title', 'Connexion WiFi - Portail Captif')
 
