@@ -86,6 +86,10 @@ $unreadCount = \App\Models\MessageRecipient::where('user_id', $user?->id)->where
                     <i class="fas fa-wifi w-4 text-center"></i>
                     <span x-show="!collapsed" class="whitespace-nowrap">Hotspot</span>
                 </a>
+                <a href="{{ route('routeurs.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin-reseau.wifi-zones*') ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''" title="Sélectionner un routeur pour gérer les Zones WiFi">
+                    <i class="fas fa-broadcast-tower w-4 text-center"></i>
+                    <span x-show="!collapsed" class="whitespace-nowrap">Zones WiFi</span>
+                </a>
             </div>
         </div>
         @endrole

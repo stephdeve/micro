@@ -2566,4 +2566,327 @@ class MikrotikService
             return [];
         }
     }
+
+    /**
+     * Configurer une adresse IP sur une interface/bridge
+     */
+    public function setIpAddress(Routeur $routeur, string $address, string $interface): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Vérifier si l'adresse existe déjà sur cette interface
+            $req = new Request('/ip/address/print');
+            $req->setQuery('?interface=' . $interface);
+            $resp = $client->sendSync($req);
+            
+            $existingId = null;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $existingId = $item->getProperty('.id');
+                    break;
+                }
+            }
+            
+            if ($existingId) {
+                // Mettre à jour l'adresse existante
+                $setReq = new Request('/ip/address/set');
+                $setReq->setArgument('numbers', $existingId);
+                $setReq->setArgument('address', $address);
+                $client->sendSync($setReq);
+            } else {
+                // Créer une nouvelle adresse
+                $addReq = new Request('/ip/address/add');
+                $addReq->setArgument('address', $address);
+                $addReq->setArgument('interface', $interface);
+                $client->sendSync($addReq);
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik setIpAddress failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Créer ou mettre à jour un pool DHCP
+     */
+    public function setDhcpPool(Routeur $routeur, string $poolName, string $range): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Vérifier si le pool existe
+            $req = new Request('/ip/pool/print');
+            $req->setQuery('?name=' . $poolName);
+            $resp = $client->sendSync($req);
+            
+            $existingId = null;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $existingId = $item->getProperty('.id');
+                    break;
+                }
+            }
+            
+            if ($existingId) {
+                // Mettre à jour le pool existant
+                $setReq = new Request('/ip/pool/set');
+                $setReq->setArgument('numbers', $existingId);
+                $setReq->setArgument('ranges', $range);
+                $client->sendSync($setReq);
+            } else {
+                // Créer un nouveau pool
+                $addReq = new Request('/ip/pool/add');
+                $addReq->setArgument('name', $poolName);
+                $addReq->setArgument('ranges', $range);
+                $client->sendSync($addReq);
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik setDhcpPool failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Configurer un serveur DHCP sur une interface
+     */
+    public function setDhcpServer(Routeur $routeur, string $serverName, string $interface, string $poolName, string $network, string $gateway): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Vérifier si le serveur DHCP existe
+            $req = new Request('/ip/dhcp-server/print');
+            $req->setQuery('?name=' . $serverName);
+            $resp = $client->sendSync($req);
+            
+            $existingId = null;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $existingId = $item->getProperty('.id');
+                    break;
+                }
+            }
+            
+            if ($existingId) {
+                // Mettre à jour le serveur existant
+                $setReq = new Request('/ip/dhcp-server/set');
+                $setReq->setArgument('numbers', $existingId);
+                $setReq->setArgument('interface', $interface);
+                $setReq->setArgument('address-pool', $poolName);
+                $client->sendSync($setReq);
+            } else {
+                // Créer un nouveau serveur DHCP
+                $addReq = new Request('/ip/dhcp-server/add');
+                $addReq->setArgument('name', $serverName);
+                $addReq->setArgument('interface', $interface);
+                $addReq->setArgument('address-pool', $poolName);
+                $addReq->setArgument('lease-time', '1d');
+                $client->sendSync($addReq);
+            }
+            
+            // Configurer le réseau DHCP (gateway, masque, etc.)
+            $networkReq = new Request('/ip/dhcp-server/network/print');
+            $networkReq->setQuery('?address=' . $network);
+            $networkResp = $client->sendSync($networkReq);
+            
+            $networkId = null;
+            foreach ($networkResp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $networkId = $item->getProperty('.id');
+                    break;
+                }
+            }
+            
+            if ($networkId) {
+                // Mettre à jour le réseau existant
+                $setNetReq = new Request('/ip/dhcp-server/network/set');
+                $setNetReq->setArgument('numbers', $networkId);
+                $setNetReq->setArgument('gateway', $gateway);
+                $client->sendSync($setNetReq);
+            } else {
+                // Créer un nouveau réseau
+                $addNetReq = new Request('/ip/dhcp-server/network/add');
+                $addNetReq->setArgument('address', $network);
+                $addNetReq->setArgument('gateway', $gateway);
+                $client->sendSync($addNetReq);
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik setDhcpServer failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Configurer une règle firewall avec time (horaires)
+     * Bloque le trafic en dehors des heures autorisées
+     */
+    public function setTimeFirewallRule(Routeur $routeur, string $ruleName, string $srcAddress, string $startTime, string $endTime, array $days = []): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Supprimer la règle existante avec ce nom
+            $req = new Request('/ip/firewall/filter/print');
+            $req->setQuery('?comment=' . $ruleName);
+            $resp = $client->sendSync($req);
+            
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $removeReq = new Request('/ip/firewall/filter/remove');
+                    $removeReq->setArgument('numbers', $item->getProperty('.id'));
+                    $client->sendSync($removeReq);
+                }
+            }
+            
+            // Convertir les jours au format MikroTik (mon,tue,wed,thu,fri,sat,sun)
+            $dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            $mikrotikDays = [];
+            foreach ($days as $day) {
+                if (isset($dayMap[$day])) {
+                    $mikrotikDays[] = $dayMap[$day];
+                }
+            }
+            
+            // Créer la règle de blocage (drop) en dehors des heures
+            // MikroTik time format: start-end,day1,day2,...
+            // On inverse: on bloque en dehors des heures de travail
+            $timeSpec = $endTime . '-' . $startTime;
+            if (!empty($mikrotikDays)) {
+                $timeSpec .= ',' . implode(',', $mikrotikDays);
+            }
+            
+            $addReq = new Request('/ip/firewall/filter/add');
+            $addReq->setArgument('chain', 'forward');
+            $addReq->setArgument('src-address', $srcAddress);
+            $addReq->setArgument('time', $timeSpec);
+            $addReq->setArgument('action', 'drop');
+            $addReq->setArgument('comment', $ruleName);
+            $client->sendSync($addReq);
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik setTimeFirewallRule failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Supprimer les règles firewall d'une zone
+     */
+    public function removeTimeFirewallRules(Routeur $routeur, string $rulePrefix): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Récupérer toutes les règles avec ce préfixe
+            $req = new Request('/ip/firewall/filter/print');
+            $resp = $client->sendSync($req);
+            
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $comment = $item->getProperty('comment');
+                    if (str_starts_with($comment ?? '', $rulePrefix)) {
+                        $removeReq = new Request('/ip/firewall/filter/remove');
+                        $removeReq->setArgument('numbers', $item->getProperty('.id'));
+                        $client->sendSync($removeReq);
+                    }
+                }
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik removeTimeFirewallRules failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Créer ou mettre à jour une queue simple pour la bande passante par utilisateur
+     * Utilise le target comme masque pour capturer tous les clients d'un réseau
+     */
+    public function setPerUserQueue(Routeur $routeur, string $queueName, string $target, int $downMbps, int $upMbps): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Vérifier si la queue existe déjà
+            $req = new Request('/queue/simple/print');
+            $req->setQuery('?name=' . $queueName);
+            $resp = $client->sendSync($req);
+            
+            $existingId = null;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $existingId = $item->getProperty('.id');
+                    break;
+                }
+            }
+            
+            $maxLimit = ($upMbps > 0 ? $upMbps . 'M' : '0') . '/' . ($downMbps > 0 ? $downMbps . 'M' : '0');
+            
+            if ($existingId) {
+                // Mettre à jour la queue existante
+                $setReq = new Request('/queue/simple/set');
+                $setReq->setArgument('numbers', $existingId);
+                $setReq->setArgument('target', $target);
+                $setReq->setArgument('max-limit', $maxLimit);
+                $client->sendSync($setReq);
+            } else {
+                // Créer une nouvelle queue
+                $addReq = new Request('/queue/simple/add');
+                $addReq->setArgument('name', $queueName);
+                $addReq->setArgument('target', $target);
+                $addReq->setArgument('max-limit', $maxLimit);
+                $client->sendSync($addReq);
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik setPerUserQueue failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Configurer max-clients sur l'interface wireless
+     */
+    public function setWifiMaxClients(Routeur $routeur, string $interfaceName, int $maxClients): bool
+    {
+        try {
+            $client = $this->client($routeur);
+            
+            // Trouver l'interface
+            $req = new Request('/interface/wireless/print');
+            $req->setQuery('?name=' . $interfaceName);
+            $resp = $client->sendSync($req);
+            
+            $interfaceId = null;
+            foreach ($resp as $item) {
+                if ($item instanceof \PEAR2\Net\RouterOS\Response) {
+                    $interfaceId = $item->getProperty('.id');
+                    break;
+                }
+            }
+            
+            if ($interfaceId) {
+                $setReq = new Request('/interface/wireless/set');
+                $setReq->setArgument('numbers', $interfaceId);
+                $setReq->setArgument('max-station-count', (string)$maxClients);
+                $client->sendSync($setReq);
+                return true;
+            }
+            
+            return false;
+        } catch (\Throwable $e) {
+            Log::error('Mikrotik setWifiMaxClients failed', ['routeur_id' => $routeur->id, 'error' => $e->getMessage()]);
+            return false;
+        }
+    }
 }

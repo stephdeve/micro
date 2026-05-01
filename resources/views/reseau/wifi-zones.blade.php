@@ -151,7 +151,12 @@
                 </div>
 
                 <div class="flex items-center justify-between px-4 py-2 bg-slate-900/70 border-t border-slate-700 text-xs">
-                    <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{{ $zone->frequency_band === '5ghz-a' ? '5 GHz' : '2.4 GHz' }}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">{{ $zone->frequency_band === '5ghz-a' ? '5 GHz' : '2.4 GHz' }}</span>
+                        <button onclick="showCommands({{ $zone->id }})" class="text-slate-400 hover:text-cyan-400 transition-colors" title="Voir commandes RouterOS">
+                            <i class="fas fa-terminal"></i>
+                        </button>
+                    </div>
                     <span class="text-slate-500">{{ $zone->wifi_interface_name }}</span>
                 </div>
             </div>
@@ -474,8 +479,14 @@
                     document.getElementById('password').value = '';
                     document.getElementById('bandwidth_down').value = data.zone.bandwidth_down;
                     document.getElementById('bandwidth_up').value = data.zone.bandwidth_up;
+                    document.getElementById('per_user_down').value = data.zone.per_user_down || '';
+                    document.getElementById('per_user_up').value = data.zone.per_user_up || '';
                     document.getElementById('quota_monthly').value = data.zone.quota_monthly;
                     document.getElementById('vlan_id').value = data.zone.vlan_id || '';
+                    document.getElementById('network_address').value = data.zone.network_address || '';
+                    document.getElementById('gateway').value = data.zone.gateway || '';
+                    document.getElementById('dhcp_pool_start').value = data.zone.dhcp_pool_start || '';
+                    document.getElementById('dhcp_pool_end').value = data.zone.dhcp_pool_end || '';
                     document.getElementById('frequency_band').value = data.zone.frequency_band;
                     document.getElementById('max_clients').value = data.zone.max_clients;
                     document.getElementById('commentaire').value = data.zone.commentaire || '';
@@ -580,7 +591,55 @@
             }
         });
     }
+
+    function showCommands(zoneId) {
+        fetch(`${BASE_URL}/routeurs/{{ $routeur->id }}/wifi-zones/${zoneId}/commands`)
+            .then(r => r.json())
+            .then(data => {
+                const modal = document.getElementById('commandsModal');
+                const content = document.getElementById('commandsContent');
+                content.innerHTML = data.commands.map(cmd => `<div class="font-mono text-sm text-emerald-400 mb-1">${cmd}</div>`).join('');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+    }
+
+    function closeCommandsModal() {
+        const modal = document.getElementById('commandsModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 </script>
+
+<!-- Modal Commandes RouterOS -->
+<div id="commandsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+        <div class="px-4 py-3 border-b border-slate-700 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center">
+                    <i class="fas fa-terminal text-white text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Commandes RouterOS</h3>
+                    <p class="text-[10px] text-slate-400">Générées pour cette zone WiFi</p>
+                </div>
+            </div>
+            <button onclick="closeCommandsModal()" class="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all flex items-center justify-center">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-auto p-4 bg-black/50">
+            <div id="commandsContent" class="space-y-1">
+                <!-- Les commandes seront injectées ici -->
+            </div>
+        </div>
+        <div class="px-4 py-3 border-t border-slate-700 bg-slate-900 flex justify-end gap-2">
+            <button onclick="closeCommandsModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all border border-slate-700">
+                Fermer
+            </button>
+        </div>
+    </div>
+</div>
 
 @php
 function signalClass($signal) {

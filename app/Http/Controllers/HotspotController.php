@@ -356,6 +356,14 @@ class HotspotController extends Controller
     }
 
     /**
+     * Afficher le guide employé pour la connexion WiFi (publique)
+     */
+    public function employeeGuide(Routeur $routeur)
+    {
+        return view('hotspot.employee-guide', compact('routeur'));
+    }
+
+    /**
      * Afficher la page de login du portail captif (publique)
      */
     public function showLogin(Routeur $routeur)

@@ -29,6 +29,7 @@ Route::get('/', function () {
 
 // Hotspot - Portail Captif (routes publiques)
 Route::get('hotspot/{routeur}/instructions', [HotspotController::class, 'showInstructions'])->name('hotspot.instructions');
+Route::get('hotspot/{routeur}/guide', [HotspotController::class, 'employeeGuide'])->name('hotspot.guide');
 Route::get('hotspot/{routeur}/login', [HotspotController::class, 'showLogin'])->name('hotspot.login');
 Route::post('hotspot/{routeur}/login', [HotspotController::class, 'doLogin'])->name('hotspot.login.submit');
 
@@ -93,6 +94,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('routeurs/{routeur}/wifi-zones/{wifiZone}', [WifiZoneController::class, 'destroy'])->name('wifi-zones.destroy');
         Route::post('routeurs/{routeur}/wifi-zones/{wifiZone}/toggle', [WifiZoneController::class, 'toggle'])->name('wifi-zones.toggle');
         Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/clients', [WifiZoneController::class, 'refreshClients'])->name('wifi-zones.clients');
+        Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/commands', [WifiZoneController::class, 'getCommands'])->name('wifi-zones.commands');
 
         // Hotspot (Portail Captif)
         Route::get('routeurs/{routeur}/hotspot', [HotspotController::class, 'index'])->name('hotspot');

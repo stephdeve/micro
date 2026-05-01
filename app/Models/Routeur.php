@@ -64,6 +64,11 @@ class Routeur extends Model
         return $this->hasMany(HotspotUser::class);
     }
 
+    public function bandwidthProfiles()
+    {
+        return $this->hasMany(BandwidthProfile::class);
+    }
+
     public function employes()
     {
         return $this->hasMany(Employe::class);
