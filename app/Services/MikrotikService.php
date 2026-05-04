@@ -254,7 +254,7 @@ class MikrotikService
         try {
             $client = $this->client($routeur);
             $req = new Request('/ip/firewall/filter/add');
-            $req->setArgument('chain', $data['chain'] ?? 'forward');
+            $req->setArgument('chain', strtolower($data['chain'] ?? 'forward'));
             $req->setArgument('action', $data['action'] ?? 'accept');
 
             if (!empty($data['protocol'])) $req->setArgument('protocol', $data['protocol']);

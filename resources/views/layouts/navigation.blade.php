@@ -49,12 +49,30 @@ $unreadCount = \App\Models\MessageRecipient::where('user_id', $user?->id)->where
         </a>
 
         <!-- Super Admin -->
-        @can('manage_all_services')
-        <a href="{{ route('super-admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors {{ request()->routeIs('super-admin.*') ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-            <i class="fas fa-crown w-5 text-center"></i>
-            <span x-show="!collapsed" x-transition class="text-sm font-medium whitespace-nowrap">Super Admin</span>
-        </a>
-        @endcan
+        @role('super_admin')
+        <div x-data="{ open: false }" class="space-y-1">
+            <button @click="open = !open" x-show="!collapsed" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors {{ request()->routeIs('super-admin.*') || request()->routeIs('admin.users.*') ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-crown w-5 text-center text-amber-400"></i>
+                    <span class="text-sm font-medium whitespace-nowrap">Super Admin</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform" :class="open ? '' : '-rotate-90'"></i>
+            </button>
+            <a href="{{ route('super-admin.dashboard') }}" x-show="collapsed" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('super-admin.*') || request()->routeIs('admin.users.*') ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}" title="Super Admin">
+                <i class="fas fa-crown w-5 text-center"></i>
+            </a>
+            <div x-show="(!collapsed && open) || collapsed" :class="collapsed ? 'space-y-1' : 'pl-11 space-y-1'" class="transition-all">
+                <a href="{{ route('super-admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('super-admin.dashboard') ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''">
+                    <i class="fas fa-chart-line w-4 text-center"></i>
+                    <span x-show="!collapsed" class="whitespace-nowrap">Dashboard</span>
+                </a>
+                <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.users.*') ? 'text-amber-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''">
+                    <i class="fas fa-user-shield w-4 text-center"></i>
+                    <span x-show="!collapsed" class="whitespace-nowrap">Gérer les Admins</span>
+                </a>
+            </div>
+        </div>
+        @endrole
 
         <!-- Admin Réseau -->
         @role('admin_reseau|super_admin')
@@ -82,13 +100,17 @@ $unreadCount = \App\Models\MessageRecipient::where('user_id', $user?->id)->where
                     <i class="fas fa-shield-alt w-4 text-center"></i>
                     <span x-show="!collapsed" class="whitespace-nowrap">Sécurité</span>
                 </a>
-                <a href="{{ route('routeurs.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin-reseau.hotspot*') ? 'text-purple-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''" title="Sélectionner un routeur pour gérer le Hotspot">
+                <a href="{{ route('admin-reseau.hotspot.dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin-reseau.hotspot*') ? 'text-purple-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''">
                     <i class="fas fa-wifi w-4 text-center"></i>
                     <span x-show="!collapsed" class="whitespace-nowrap">Hotspot</span>
                 </a>
-                <a href="{{ route('routeurs.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin-reseau.wifi-zones*') ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''" title="Sélectionner un routeur pour gérer les Zones WiFi">
+                <a href="{{ route('admin-reseau.wifi-zones.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin-reseau.wifi-zones*') ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''">
                     <i class="fas fa-broadcast-tower w-4 text-center"></i>
                     <span x-show="!collapsed" class="whitespace-nowrap">Zones WiFi</span>
+                </a>
+                <a href="{{ route('admin-reseau.bandwidth.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin-reseau.bandwidth*') ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300' }} transition-colors" :class="collapsed ? 'justify-center' : ''">
+                    <i class="fas fa-tachometer-alt w-4 text-center"></i>
+                    <span x-show="!collapsed" class="whitespace-nowrap">QoS / Bande Passante</span>
                 </a>
             </div>
         </div>

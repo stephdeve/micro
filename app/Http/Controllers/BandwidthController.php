@@ -24,7 +24,7 @@ class BandwidthController extends Controller
         $profiles = $routeur->bandwidthProfiles()
             ->orderBy('priority')
             ->orderBy('nom')
-            ->get();
+            ->get() ?? collect([]);
 
         // Profils par défaut suggérés si aucun
         $defaultProfiles = [
@@ -34,7 +34,11 @@ class BandwidthController extends Controller
             ['nom' => 'Invités', 'download' => 1, 'upload' => 0.5, 'quota' => 2, 'color' => 'rose'],
         ];
 
-        return view('reseau.bandwidth', compact('routeur', 'profiles', 'defaultProfiles'));
+        return view('reseau.bandwidth', [
+            'routeur' => $routeur,
+            'profiles' => $profiles,
+            'defaultProfiles' => $defaultProfiles
+        ]);
     }
 
     /**

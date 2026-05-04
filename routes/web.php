@@ -22,6 +22,7 @@ use App\Http\Controllers\MikroTikFirewallController;
 use App\Http\Controllers\WifiZoneController;
 use App\Http\Controllers\HotspotController;
 use App\Http\Controllers\EmployeNetworkController;
+use App\Http\Controllers\UserManagementController;
 
 Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
@@ -52,9 +53,27 @@ Route::middleware('auth')->group(function () {
         Route::get('dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
     });
 
+    // ===== GESTION DES UTILISATEURS (Super Admin uniquement) =====
+    Route::middleware('role:super_admin')->prefix('admin/users')->name('admin.users.')->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('/create', [UserManagementController::class, 'create'])->name('create');
+        Route::post('/', [UserManagementController::class, 'store'])->name('store');
+        Route::get('/{user}/edit', [UserManagementController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
+        Route::post('/{user}/toggle', [UserManagementController::class, 'toggle'])->name('toggle');
+        Route::post('/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('reset-password');
+        Route::get('/generate-password', [UserManagementController::class, 'generatePassword'])->name('generate-password');
+    });
+
     // ===== ADMINISTRATEUR RÉSEAU =====
     Route::middleware('role:admin_reseau|super_admin')->prefix('admin-reseau')->name('admin-reseau.')->group(function () {
         Route::get('dashboard', [AdminReseauController::class, 'dashboard'])->name('dashboard');
+
+        // Routeurs Selector (pour choisir un routeur avant d'accéder aux fonctionnalités)
+        Route::get('hotspot', [AdminReseauController::class, 'hotspotSelector'])->name('hotspot.dashboard');
+        Route::get('wifi-zones', [AdminReseauController::class, 'wifiZonesSelector'])->name('wifi-zones.index');
+        Route::get('bandwidth', [AdminReseauController::class, 'bandwidthSelector'])->name('bandwidth.index');
 
         // Firewall
         Route::get('routeurs/{routeur}/firewall', [AdminReseauController::class, 'firewallIndex'])->name('firewall');
@@ -95,6 +114,16 @@ Route::middleware('auth')->group(function () {
         Route::post('routeurs/{routeur}/wifi-zones/{wifiZone}/toggle', [WifiZoneController::class, 'toggle'])->name('wifi-zones.toggle');
         Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/clients', [WifiZoneController::class, 'refreshClients'])->name('wifi-zones.clients');
         Route::get('routeurs/{routeur}/wifi-zones/{wifiZone}/commands', [WifiZoneController::class, 'getCommands'])->name('wifi-zones.commands');
+
+        // Bande Passante / QoS
+        Route::get('routeurs/{routeur}/bandwidth', [BandwidthController::class, 'index'])->name('bandwidth');
+        Route::post('routeurs/{routeur}/bandwidth', [BandwidthController::class, 'store'])->name('bandwidth.store');
+        Route::get('routeurs/{routeur}/bandwidth/{profile}', [BandwidthController::class, 'show'])->name('bandwidth.show');
+        Route::put('routeurs/{routeur}/bandwidth/{profile}', [BandwidthController::class, 'update'])->name('bandwidth.update');
+        Route::delete('routeurs/{routeur}/bandwidth/{profile}', [BandwidthController::class, 'destroy'])->name('bandwidth.destroy');
+        Route::post('routeurs/{routeur}/bandwidth/{profile}/toggle', [BandwidthController::class, 'toggle'])->name('bandwidth.toggle');
+        Route::get('routeurs/{routeur}/bandwidth/{profile}/commands', [BandwidthController::class, 'getCommands'])->name('bandwidth.commands');
+        Route::post('routeurs/{routeur}/bandwidth/apply-all', [BandwidthController::class, 'applyAll'])->name('bandwidth.apply-all');
 
         // Hotspot (Portail Captif)
         Route::get('routeurs/{routeur}/hotspot', [HotspotController::class, 'index'])->name('hotspot');

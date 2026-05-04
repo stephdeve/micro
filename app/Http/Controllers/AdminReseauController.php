@@ -114,6 +114,25 @@ class AdminReseauController extends Controller
         ));
     }
 
+    // ===== SELECTORS (pour navigation sans routeur spécifique) =====
+    public function hotspotSelector()
+    {
+        $routeurs = Routeur::orderBy('nom')->get();
+        return view('reseau.selectors.hotspot', compact('routeurs'));
+    }
+
+    public function wifiZonesSelector()
+    {
+        $routeurs = Routeur::orderBy('nom')->get();
+        return view('reseau.selectors.wifi-zones', compact('routeurs'));
+    }
+
+    public function bandwidthSelector()
+    {
+        $routeurs = Routeur::orderBy('nom')->get();
+        return view('reseau.selectors.bandwidth', compact('routeurs'));
+    }
+
     // ===== FIREWALL =====
     public function firewallIndex(Routeur $routeur, Request $request)
     {

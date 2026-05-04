@@ -489,6 +489,55 @@ document.getElementById('cancel-firewall-rule')?.addEventListener('click', () =>
     document.getElementById('add-firewall-rule-form').classList.add('hidden');
 });
 
+// Save firewall rule
+document.getElementById('save-firewall-rule')?.addEventListener('click', async function() {
+    const nom = document.getElementById('fw-rule-nom').value.trim();
+    const chain = document.getElementById('fw-rule-chain').value;
+    const action = document.getElementById('fw-rule-action').value;
+    
+    if (!nom) {
+        alert('Veuillez entrer un nom pour la règle');
+        return;
+    }
+    
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    try {
+        const res = await fetch('{{ route('securite.firewall-rules.store') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+            },
+            body: JSON.stringify({
+                nom: nom,
+                chain: chain,
+                action: action
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            // Vider le formulaire
+            document.getElementById('fw-rule-nom').value = '';
+            document.getElementById('add-firewall-rule-form').classList.add('hidden');
+            // Recharger la page pour voir la nouvelle règle
+            window.location.reload();
+        } else {
+            alert(data.message || 'Erreur lors de l\'ajout de la règle');
+        }
+    } catch (e) {
+        console.error('Save error:', e);
+        alert('Erreur de communication avec le serveur');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i>';
+    }
+});
+
 // Refresh button
 document.getElementById('refresh-securite')?.addEventListener('click', async function() {
     const btn = this;
